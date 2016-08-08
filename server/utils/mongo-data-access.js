@@ -175,23 +175,23 @@ MongoDataAccess.prototype = (function () {
 		 */
 		asyncFindOneByObject: function (collectionName, whereObj) {
 			// create promise object to return to caller
-			var deferred = _q.defer();
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					deferred.reject(error);
-					return;
-				}
-				collection.find(whereObj).limit(1).next(function (error, doc) {
+			return new Promise((resolve, reject) => {
+				_db.collection(collectionName, function (error, collection) {
 					if (error) {
 						console.error(error);
-						deferred.reject(error);
-					} else {
-						deferred.resolve(doc);
+						reject(error);
+						return;
 					}
+					collection.find(whereObj).limit(1).next(function (error, doc) {
+						if (error) {
+							console.error(error);
+							reject(error);
+						} else {
+							resolve(doc);
+						}
+					});
 				});
 			});
-			return deferred.promise;
 		},
 
 		/**
@@ -243,20 +243,20 @@ MongoDataAccess.prototype = (function () {
 		 */
 		asyncFindAllByObject: function (collectionName, whereObj) {
 			// create promise object to return to caller
-			var deferred = _q.defer();
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					deferred.reject(error);
-					return;
-				}
-				collection.find(whereObj).toArray(function (err, data) {
-					// finish promise process
-					if (err) deferred.reject(err);
-					else deferred.resolve(data);
+			return Promise((resolve, reject) => {
+				_db.collection(collectionName, function (error, collection) {
+					if (error) {
+						console.error(error);
+						reject(error);
+						return;
+					}
+					collection.find(whereObj).toArray(function (err, data) {
+						// finish promise process
+						if (err) reject(err);
+						else resolve(data);
+					});
 				});
 			});
-			return deferred.promise;
 		},
 
 		/**

@@ -174,7 +174,6 @@ MongoDataAccess.prototype = (function () {
 		 * @returns {*|promise} q promise object to await async process returning
 		 */
 		asyncFindOneByObject: function (collectionName, whereObj) {
-			// create promise object to return to caller
 			return new Promise((resolve, reject) => {
 				_db.collection(collectionName, function (error, collection) {
 					if (error) {
@@ -183,7 +182,7 @@ MongoDataAccess.prototype = (function () {
 						return;
 					}
 					collection.find(whereObj).limit(1).next(function (error, doc) {
-						if (error) {
+						if (error || !doc) {
 							console.error(error);
 							reject(error);
 						} else {

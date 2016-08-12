@@ -25,7 +25,6 @@ function setupUnionResults() {
 	var match2ObjId = new ObjectId();
 	var synWordObjId = new ObjectId();
 	var wordBagWordObjId = new ObjectId();
-	var term1 = 'match1', term2 = 'match2';
 	_this.contentIds = [
 		new ObjectId("5774752c998e45c364e44ee4"),
 		new ObjectId("577475b8998e45c364e45191"),
@@ -34,11 +33,11 @@ function setupUnionResults() {
 		new ObjectId(),
 		new ObjectId()
 	];
-	modLib.db.asyncFindOneByObject.withArgs('word_index', {word: term1})
+	modLib.db.asyncFindOneByObject.withArgs('word_index', {word: 'match1'})
 		.returns(Promise.resolve(new Promise((resolve, reject) => {
 			resolve({
 				"_id": match1ObjId,
-				"word": term1,
+				"word": 'match1',
 				"count": 6,
 				"content_refs": [_this.contentIds[0], _this.contentIds[1], _this.contentIds[2]],
 				"synonyms": {
@@ -52,11 +51,11 @@ function setupUnionResults() {
 				}
 			})
 		})));
-	modLib.db.asyncFindOneByObject.withArgs('word_index', {word: term2})
+	modLib.db.asyncFindOneByObject.withArgs('word_index', {word: 'match2'})
 		.returns(new Promise((resolve, reject) => {
 			resolve({
 				"_id": match2ObjId,
-				"word": term2,
+				"word": 'match2',
 				"count": 10,
 				"content_refs": [_this.contentIds[0], _this.contentIds[3]]
 			})
@@ -254,6 +253,18 @@ describe('search-utils', function () {
 			return searchUtils.performSearch(input)
 				.then((results) => {
 					return expect(results.data.qaResults[0]._id.toString()).to.equal(_this.contentIds[0].toString());
+				});
+		});
+		it('should not add search terms to the list of synonyms', function () {
+			var input = 'match1 example';
+			var notRequiredSynonym = 'example';
+			var synonymNotPresent = true;
+			return searchUtils.performSearch(input)
+				.then((results) => {
+					results.data.synonyms.forEach((entry) => {
+						if (entry.word === notRequiredSynonym) synonymNotPresent = false;
+					});
+					return expect(synonymNotPresent).to.equal(true);
 				});
 		});
 	});

@@ -184,7 +184,8 @@ MongoDataAccess.prototype = (function () {
 					collection.find(whereObj).limit(1).next(function (error, doc) {
 						resolve(doc); // always resolve,
 						// because lookup may fail but only partially in a set of look-ups, and don't want entire
-						// procedure to blow up
+						// procedure to blow up. Validity of doc can be checked in consumer. Especially important in chaning Promises,
+						// or using Promise.all for DB look-ups
 					});
 				});
 			});

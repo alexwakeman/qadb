@@ -51,6 +51,7 @@ module.exports = function (modLib) {
 				.then(extractSortedContentRefs)
 				.then(extractContent)
 				.then((wordBagContent) => {
+					// need to ensure the word bag content is not already present in the results
 					var contentEntries = [];
 					resultObj.data.qaResults.forEach((entry) => {
 						var entryId = entry._id.toString();
@@ -64,6 +65,7 @@ module.exports = function (modLib) {
 				.then(() => inputWordList)
 				.then(extractSynonymList)
 				.then((synonyms) => {
+					synonyms = synonyms.filter((entry) => ! ~ input.indexOf(entry.word));
 					resultObj.data.synonyms = synonyms;
 					return resultObj;
 				});

@@ -23,10 +23,14 @@ const errorMsg = 'No records found';
 function setupUnionResults() {
 	var match1ObjId = new ObjectId();
 	var match2ObjId = new ObjectId();
+	var synWordObjId = new ObjectId();
+	var wordBagWordObjId = new ObjectId();
 	var term1 = 'match1', term2 = 'match2';
 	_this.contentIds = [
 		new ObjectId("5774752c998e45c364e44ee4"),
 		new ObjectId("577475b8998e45c364e45191"),
+		new ObjectId(),
+		new ObjectId(),
 		new ObjectId(),
 		new ObjectId()
 	];
@@ -57,13 +61,33 @@ function setupUnionResults() {
 				"content_refs": [_this.contentIds[0], _this.contentIds[3]]
 			})
 		}));
+	/* The synonym word entry */
+	modLib.db.asyncFindOneByObject.withArgs('word_index', {word: 'example'})
+		.returns(new Promise((resolve, reject) => {
+			resolve({
+				"_id": synWordObjId,
+				"word": 'example',
+				"count": 3,
+				"content_refs": [_this.contentIds[0], _this.contentIds[4]]
+			})
+		}));
+	/* The word_bag word entry */
+	modLib.db.asyncFindOneByObject.withArgs('word_index', {word: 'question'})
+		.returns(new Promise((resolve, reject) => {
+			resolve({
+				"_id": wordBagWordObjId,
+				"word": 'question',
+				"count": 9,
+				"content_refs": [_this.contentIds[5]]
+			})
+		}));
 	modLib.db.asyncFindOneByObject.withArgs('word_index', {word: ''})
 		.returns(new Promise((resolve, reject) => {
-			reject(new Error(errorMsg));
+			resolve(null);
 		}));
 	modLib.db.asyncFindOneByObject.withArgs('word_index', {word: 'nonmatchedword'})
 		.returns(new Promise((resolve, reject) => {
-			reject(new Error(errorMsg));
+			resolve(null);
 		}));
 	modLib.db.asyncFindOneByObject.withArgs('content', {_id: _this.contentIds[0].toString()})
 		.returns(new Promise((resolve, reject) => {
@@ -113,6 +137,30 @@ function setupUnionResults() {
 				urls:['http://example.com/question']
 			})
 		}));
+	modLib.db.asyncFindOneByObject.withArgs('content', {_id: _this.contentIds[4].toString()})
+		.returns(new Promise((resolve, reject) => {
+			resolve({
+				_id: _this.contentIds[4],
+				question: "Synonym referenced content? - 5",
+				answer: "Synonym ref'd content - 5",
+				likes: 12,
+				dislikes: 5,
+				wordbag: ['example', 'question'],
+				urls:['http://example.com/question']
+			})
+		}));
+	modLib.db.asyncFindOneByObject.withArgs('content', {_id: _this.contentIds[5].toString()})
+		.returns(new Promise((resolve, reject) => {
+			resolve({
+				_id: _this.contentIds[5],
+				question: "Word bag content lookup? - 6",
+				answer: "Word bag content lookup - 6",
+				likes: 4,
+				dislikes: 0,
+				wordbag: ['wordbag', 'content'],
+				urls:['http://other.com/word']
+			})
+		}));
 }
 
 describe('search-utils', function () {
@@ -122,12 +170,13 @@ describe('search-utils', function () {
 			modLib.db = {
 				asyncFindOneByObject: sinon.stub()
 			};
+			setupUnionResults();
 			searchUtils = require('../utils/search-utils')(modLib);
 		});
 
 		it('should return a set of Q&A results that contains a union of two matched words first, followed by synonym unions', function () {
 			var input = 'match1 match2';
-			setupUnionResults();
+
 			return searchUtils.performSearch(input)
 				.then((results) => {
 					return expect(results.data.qaResults[0]._id.toString()).to.equal(_this.contentIds[0].toString()) &&
@@ -136,34 +185,29 @@ describe('search-utils', function () {
 		});
 		it('should return a synonym result as higher priority than single word match', function () {
 			var input = 'match1 match2';
-			setupUnionResults();
 			return searchUtils.performSearch(input)
 				.then((results) => {
-					return expect(results.data.qaResults[1]._id.toString()).to.equal(_this.contentIds[2].toString()) &&
-						expect(results.data.qaResults[3]._id.toString()).to.equal(_this.contentIds[3].toString());
+					return expect(results.data.qaResults[1]._id.toString()).to.equal(_this.contentIds[2].toString());
 				});
 		});
 		it('should rank single word or synonym matches according to word count', function () {
 			var input = 'match1 match2';
-			setupUnionResults();
 			return searchUtils.performSearch(input)
 				.then((results) => {
-					return expect(results.data.qaResults[2]._id.toString()).to.equal(_this.contentIds[1].toString());
+					return expect(results.data.qaResults[2]._id.toString()).to.equal(_this.contentIds[3].toString());
 				});
 		});
 		it('should return an empty results list with no text given', function () {
 			var input = '';
-			setupUnionResults();
 			return searchUtils.performSearch(input)
 				.then((results) => {
 					return expect(results).to.not.be.ok;
 				}, (error) => {
-					return expect(error).to.be.ok && expect(error.message).to.equal(errorMsg);
+					return expect(error.message).to.be.ok && expect(error.message).to.equal(errorMsg);
 				});
 		});
-		it('should return an empty results list with no matches available', function () {
+		it('should return an empty results list when no matches are available', function () {
 			var input = 'nonmatchedword';
-			setupUnionResults();
 			return searchUtils.performSearch(input)
 				.then((results) => {
 					return expect(results).to.not.be.ok;
@@ -171,24 +215,45 @@ describe('search-utils', function () {
 					return expect(error.message).to.be.ok && expect(error.message).to.equal(errorMsg);
 				});
 		});
-		it('should lookup synonyms in word_index if results are limited, and apply content refs', function () {
-			var input = 'match';
-			setupUnionResults();
+		it('should look up synonyms in word_index and append content to the end of the results', function () {
+			var input = 'match1 match2';
 			return searchUtils.performSearch(input)
 				.then((results) => {
-					return expect(results).to.not.be.ok;
-				}, (error) => {
-					return expect(error.message).to.be.ok && expect(error.message).to.equal(errorMsg);
+					return expect(results.data.qaResults[4]._id.toString()).to.equal(_this.contentIds[4].toString());
 				});
 		});
-		it('should use word_bag words for further results if results are still lacking, fetch word_index content refs', function () {
-			var input = 'match';
-			setupUnionResults();
+		it('should not return duplicate results', function() {
+			var input = 'match1 match2';
+			var uniqueEntries = [];
+			var allUnique = true;
 			return searchUtils.performSearch(input)
 				.then((results) => {
-					return expect(results).to.not.be.ok;
-				}, (error) => {
-					return expect(error.message).to.be.ok && expect(error.message).to.equal(errorMsg);
+					results.data.qaResults.forEach((entry) => {
+						var entryId = entry._id.toString();
+						! ~ uniqueEntries.indexOf(entryId) ? uniqueEntries.push(entryId) : (allUnique = false);
+					});
+					return expect(allUnique).to.be.true;
+				});
+		});
+		it('should include a set of synonym words if available in results object', function() {
+			var input = 'match1 match2';
+			return searchUtils.performSearch(input)
+				.then((results) => {
+					return expect(results.data.synonyms).to.be.ok && expect(results.data.synonyms.length).to.equal(1);
+				});
+		});
+		it('should use word_bag words for further results an add to end of results list', function () {
+			var input = 'match1 match2';
+			return searchUtils.performSearch(input)
+				.then((results) => {
+					return expect(results.data.qaResults[5]._id.toString()).to.equal(_this.contentIds[5].toString());
+				});
+		});
+		it('should still return some results if some word look-ups fail', function () {
+			var input = 'match1 nonmatchedword';
+			return searchUtils.performSearch(input)
+				.then((results) => {
+					return expect(results.data.qaResults[0]._id.toString()).to.equal(_this.contentIds[0].toString());
 				});
 		});
 	});

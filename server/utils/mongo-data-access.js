@@ -182,12 +182,9 @@ MongoDataAccess.prototype = (function () {
 						return;
 					}
 					collection.find(whereObj).limit(1).next(function (error, doc) {
-						if (error || !doc) {
-							console.error(error);
-							reject(error);
-						} else {
-							resolve(doc);
-						}
+						resolve(doc); // always resolve,
+						// because lookup may fail but only partially in a set of look-ups, and don't want entire
+						// procedure to blow up
 					});
 				});
 			});

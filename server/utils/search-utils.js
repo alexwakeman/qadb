@@ -5,21 +5,16 @@ module.exports = function (modLib) {
 
 	return {
 		performSearch: function (inputString) {
-			// split words, remove stops
-			// extract any matches from word_index
-			// fetch list of Q&A references
-			// look for unions amongst word matches
-			// check synonyms - look for unions here too
-			// rank according to word count (and likes?)
 			var input,
-				wordIndexLookups = [],
-				contentLookups = [],
 				resultObj = {
 					data: {
 						qaResults: [],
 						synonyms: []
 					}
 				};
+			var wordIndexLookups = [];
+			var synonymWordIndexLookups = [];
+			var inputWordList = [];
 			inputString = inputString.toLowerCase();
 			inputString = inputString.replace(boundedStopsRegex, '');
 			input = inputString.split(' ');
@@ -27,16 +22,49 @@ module.exports = function (modLib) {
 
 			return Promise
 				.all(wordIndexLookups)
-				.then(extractSortedContentRefs)
-				.then((sortedContentRefs) => {
-					sortedContentRefs.results.forEach((matchRef) => contentLookups.push(db.asyncFindOneByObject('content', { _id: matchRef })));
-					resultObj.data.synonyms = sortedContentRefs.synonyms;
-					return Promise.all(contentLookups);
-				})
-				.then((qaResults) => {
-					qaResults.forEach((qaEntry) => {
-						resultObj.data.qaResults.push(qaEntry)
+				.then((wordIndexDocs) => {
+					wordIndexDocs = wordIndexDocs.filter((entry) => entry); // ensure each entry is valid (exists)
+					if (!wordIndexDocs || wordIndexDocs.length === 0) throw new Error('No records found');
+					inputWordList.push(...wordIndexDocs);
+					inputWordList.forEach((wordIndexDoc) => {
+						if (!wordIndexDoc.synonyms) return false;
+						Object.keys(wordIndexDoc.synonyms).forEach((key) => {
+							var synonymObj = wordIndexDoc.synonyms[key];
+							synonymWordIndexLookups.push(db.asyncFindOneByObject('word_index', { word: synonymObj.word }));
+						});
 					});
+					return Promise.all(synonymWordIndexLookups)
+				})
+				.then((synonymDocs) => inputWordList.push(...synonymDocs))
+				.then(() => inputWordList)
+				.then(extractSortedContentRefs)
+				.then(extractContent)
+				.then((content) => content.forEach((qaEntry) => resultObj.data.qaResults.push(qaEntry)))
+				.then(() => resultObj.data.qaResults)
+				.then(() => {
+					var wordBagRequests = [];
+					resultObj.data.qaResults.forEach((qa) => qa.wordbag.forEach(
+						(word) => wordBagRequests.push(db.asyncFindOneByObject('word_index', { word: word })))
+					);
+					return Promise.all(wordBagRequests);
+				})
+				.then(extractSortedContentRefs)
+				.then(extractContent)
+				.then((wordBagContent) => {
+					var contentEntries = [];
+					resultObj.data.qaResults.forEach((entry) => {
+						var entryId = entry._id.toString();
+						contentEntries.push(entryId);
+					});
+
+					wordBagContent.forEach((wordbagQaEntry) => {
+						! ~ contentEntries.indexOf(wordbagQaEntry._id.toString()) ? resultObj.data.qaResults.push(wordbagQaEntry) : null;
+					})
+				})
+				.then(() => inputWordList)
+				.then(extractSynonymList)
+				.then((synonyms) => {
+					resultObj.data.synonyms = synonyms;
 					return resultObj;
 				});
 		}
@@ -44,33 +72,35 @@ module.exports = function (modLib) {
 
 	/**
 	 * Sorts a set of content references from the word index, by checking for unions of content references
-	 * within each word index entry. es distinct and non-distinct entries, where non-distinct means a union was found.
-	 * This content is a better result. Also checks for each word's synonym matches, and uses these references as unions also.
+	 * within each word index entry, i.e. distinct and non-distinct entries, where non-distinct means a union was found.
+	 * This content is a better result.
+	 *
+	 * Also checks for each word's synonym matches, and uses these references as unions also,
+	 * but with reduced priority (exact unions of the user's search terms is ideal).
 	 *
 	 * If there is not many results, we can look up the synonym in the word_index and use it's content references as well.
 	 * @param wordIndexDocs
-	 * @returns {{results: Array, synonyms: Array}}
+	 * @returns {{results: Array}}
 	 */
 	function extractSortedContentRefs(wordIndexDocs) {
-		var distinctEntries = [], nonDistinctEntries = [], synonymList = [], filteredDistinct;
+		var distinctEntries = [], nonDistinctEntries = [], filteredDistinct;
 		wordIndexDocs.sort(sortByCount);
 		wordIndexDocs.forEach((wordIndexDoc) => {
 			wordIndexDoc.content_refs.forEach((contentRef) => {
 				var idString = contentRef.toString();
-				!~ distinctEntries.indexOf(idString) ? distinctEntries.push(idString) : nonDistinctEntries.push(idString);
+				~ distinctEntries.indexOf(idString) ? ~ nonDistinctEntries.indexOf(idString) ?
+					distinctEntries.push(idString) : nonDistinctEntries.push(idString) : distinctEntries.push(idString);
 			});
 		});
-
 		wordIndexDocs.forEach((wordIndexDoc) => {
 			if (wordIndexDoc.synonyms) {
 				Object.keys(wordIndexDoc.synonyms).forEach((key) => {
 					var synonymObj = wordIndexDoc.synonyms[key];
-					var reference = synonymObj.references[0].toString();
+					var idString = synonymObj.references[0].toString();
 					// treat synonym cross-references as unions, i.e. high priority matches
-					~ distinctEntries.indexOf(reference) ? nonDistinctEntries.push(reference) : null;
-					synonymList.push({synonym: synonymObj.word, count: synonymObj.count});
+					~ distinctEntries.indexOf(idString) ? ~ nonDistinctEntries.indexOf(idString) ?
+						distinctEntries.push(idString) : nonDistinctEntries.push(idString) : distinctEntries.push(idString);
 				});
-				synonymList.sort(sortByCount);
 			}
 		});
 
@@ -78,8 +108,30 @@ module.exports = function (modLib) {
 			return ! ~ nonDistinctEntries.indexOf(entry); // remove duplicates
 		});
 		nonDistinctEntries.push(...filteredDistinct);
-		return { results: nonDistinctEntries, synonyms: synonymList };
+		return { results: nonDistinctEntries };
 	}
 
-	function sortByCount(a, b) { return a.count < b.count ? -1 : a.count > b.count ? 1 : 0 }
+	function extractSynonymList(wordIndexDocs) {
+		var synonymList = [];
+		wordIndexDocs.forEach((wordIndexDoc) => {
+			if (wordIndexDoc.synonyms) {
+				Object.keys(wordIndexDoc.synonyms).forEach((key) => {
+					var synonymObj = wordIndexDoc.synonyms[key];
+					var entry = { word: synonymObj.word, count: synonymObj.count };
+					! ~ synonymList.indexOf(entry) ? synonymList.push(entry) : null;
+				});
+				synonymList.sort(sortByCount);
+			}
+		});
+
+		return synonymList;
+	}
+
+	function extractContent(sortedContentRefs) {
+		var contentLookups = [];
+		sortedContentRefs.results.forEach((matchRef) => contentLookups.push(db.asyncFindOneByObject('content', { _id: matchRef })));
+		return Promise.all(contentLookups);
+	}
+
+	function sortByCount(a, b) { return a.count < b.count ? 1 : a.count > b.count ? -1 : 0 }
 };

@@ -175,8 +175,8 @@ function setupSuggestResults() {
 	modLib.db = {
 		asyncFindAllByObject: sinon.stub()
 	};
-	// the $regex value here "what " has a space because the suggest() method replaces all non-alpha chars with a space
-	modLib.db.asyncFindAllByObject.withArgs('content', {$regex: '^what .*', $options: 'i'}, 5)
+	// the $regex value here "what" is the test value expected after non-alpha chars are stripped
+	modLib.db.asyncFindAllByObject.withArgs('content', {$regex: '^what.*', $options: 'i'}, 5)
 		.returns(new Promise((resolve, reject) => {
 			resolve([
 					{

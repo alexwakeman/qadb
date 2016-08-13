@@ -182,10 +182,11 @@ MongoDataAccess.prototype = (function () {
 						return;
 					}
 					collection.find(whereObj).limit(1).next(function (error, doc) {
-						resolve(doc); // always resolve,
+						// always resolve,
 						// because lookup may fail but only partially in a set of look-ups, and don't want entire
-						// procedure to blow up. Validity of doc can be checked in consumer. Especially important in chaning Promises,
+						// procedure to blow up. Validity of doc can be checked in consumer. Especially important in chaining Promises,
 						// or using Promise.all for DB look-ups
+						resolve(doc);
 					});
 				});
 			});
@@ -236,9 +237,10 @@ MongoDataAccess.prototype = (function () {
 		 *
 		 * @param collectionName {String} name of the Mongo collection
 		 * @param whereObj {Object} a MongoClient query object
-		 * @returns {*|promise} q promise object to await async process returning
+		 * @param limit {Number} max number of results
+		 * @returns {*|promise} promise object
 		 */
-		asyncFindAllByObject: function (collectionName, whereObj) {
+		asyncFindAllByObject: function (collectionName, whereObj, limit) {
 			// create promise object to return to caller
 			return Promise((resolve, reject) => {
 				_db.collection(collectionName, function (error, collection) {
@@ -247,10 +249,9 @@ MongoDataAccess.prototype = (function () {
 						reject(error);
 						return;
 					}
-					collection.find(whereObj).toArray(function (err, data) {
-						// finish promise process
-						if (err) reject(err);
-						else resolve(data);
+					collection.find(whereObj).limit(limit || 10).toArray(function (err, data) {
+						// finish promise process, always resolve because of chaining etc.
+						resolve(data);
 					});
 				});
 			});

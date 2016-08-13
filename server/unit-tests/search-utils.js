@@ -271,7 +271,11 @@ describe('search-utils', function () {
 
 	describe('suggest', function () {
 		xit('should fetch at most 5 questions that match this given input', function () {
-			return expect(false).to.be.ok;
+			var input = 'what';
+			return searchUtils.suggest(input)
+				.then((results) => {
+					return expect(false).to.be.ok;
+				});
 		});
 		xit('should return an empty array if no matches questions match given input', function () {
 			return expect(false).to.be.ok;

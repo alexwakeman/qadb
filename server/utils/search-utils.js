@@ -2,7 +2,7 @@ module.exports = function (modLib) {
 	var db = modLib.db;
 	var boundedStops = ["\\b\\d+\\b", "\\.", "\\,", "\\?", "\\!", "\\'", "\\,", "\\-", "\\:", "\\;", "\\ba\\b", "\\bable\\b", "\\babout\\b", "\\bacross\\b", "\\bafter\\b", "\\ball\\b", "\\balmost\\b", "\\balso\\b", "\\bam\\b", "\\bamong\\b", "\\ban\\b", "\\band\\b", "\\bany\\b", "\\bare\\b", "\\bas\\b", "\\bat\\b", "\\bbe\\b", "\\bbecause\\b", "\\bbeen\\b", "\\bbut\\b", "\\bby\\b", "\\bcan\\b", "\\bcannot\\b", "\\bcould\\b", "\\bdear\\b", "\\bdid\\b", "\\bdo\\b", "\\bdoes\\b", "\\beither\\b", "\\belse\\b", "\\bever\\b", "\\bevery\\b", "\\bfor\\b", "\\bfrom\\b", "\\bget\\b", "\\bgot\\b", "\\bhad\\b", "\\bhas\\b", "\\bhave\\b", "\\bhe\\b", "\\bher\\b", "\\bhers\\b", "\\bhim\\b", "\\bhis\\b", "\\bhow\\b", "\\bhowever\\b", "\\bi\\b", "\\bif\\b", "\\bin\\b", "\\binto\\b", "\\bis\\b", "\\bit\\b", "\\bits\\b", "\\bjust\\b", "\\bleast\\b", "\\blet\\b", "\\blike\\b", "\\blikely\\b", "\\bmay\\b", "\\bme\\b", "\\bmight\\b", "\\bmost\\b", "\\bmust\\b", "\\bmy\\b", "\\bneither\\b", "\\bno\\b", "\\bnor\\b", "\\bnot\\b", "\\bof\\b", "\\boff\\b", "\\boften\\b", "\\bon\\b", "\\bonly\\b", "\\bor\\b", "\\bother\\b", "\\bour\\b", "\\bown\\b", "\\brather\\b", "\\bsaid\\b", "\\bsay\\b", "\\bsays\\b", "\\bshe\\b", "\\bshould\\b", "\\bsince\\b", "\\bso\\b", "\\bsome\\b", "\\bthan\\b", "\\bthat\\b", "\\bthe\\b", "\\btheir\\b", "\\bthem\\b", "\\bthen\\b", "\\bthere\\b", "\\bthese\\b", "\\bthey\\b", "\\bthis\\b", "\\btis\\b", "\\bto\\b", "\\btoo\\b", "\\btwas\\b", "\\bus\\b", "\\bwants\\b", "\\bwas\\b", "\\bwe\\b", "\\bwere\\b", "\\bwhat\\b", "\\bwhen\\b", "\\bwhere\\b", "\\bwhich\\b", "\\bwhile\\b", "\\bwho\\b", "\\bwhom\\b", "\\bwhy\\b", "\\bwill\\b", "\\bwith\\b", "\\bwould\\b", "\\byet\\b", "\\byou\\b", "\\byour\\b"];
 	var boundedStopsRegex = new RegExp(boundedStops.join('|'), 'g');
-
+	var wordsOnlyRegex = new RegExp('[\W]+', 'g');
 	return {
 		performSearch: function (inputString) {
 			var input,
@@ -19,6 +19,19 @@ module.exports = function (modLib) {
 			inputString = inputString.replace(boundedStopsRegex, '');
 			input = inputString.split(' ');
 			input.forEach((word) => wordIndexLookups.push(db.asyncFindOneByObject('word_index', { word: word })));
+
+			/*
+				What is this Promise chain doing?
+
+				1 - Lookup matches in the Mongo word_index collection for the give input, if none, return empty results
+				2 - Each word_index entry potentially has a set of synonyms, so look these up in word_index too
+				3 - Add all these word_index docs to inputWordList
+				4 - Extract the content references in an order most useful to the user, i.e. with word unions, synonym unions, and sorted by word count etc.
+				5 - Extract the actual content Question and Answer documents from the content collection
+				6 - Each Q&A document contains a "wordbag" array of words used in the question - so look these up to in the word_index too
+				7 - Add these wordbag matches into the final results
+				8 - Finally attach the synonyms to the results object, for display to the user
+			 */
 
 			return Promise
 				.all(wordIndexLookups)
@@ -40,7 +53,6 @@ module.exports = function (modLib) {
 				.then(extractSortedContentRefs)
 				.then(extractContent)
 				.then((content) => content.forEach((qaEntry) => resultObj.data.qaResults.push(qaEntry)))
-				.then(() => resultObj.data.qaResults)
 				.then(() => {
 					var wordBagRequests = [];
 					resultObj.data.qaResults.forEach((qa) => qa.wordbag.forEach(
@@ -69,6 +81,10 @@ module.exports = function (modLib) {
 					resultObj.data.synonyms = synonyms;
 					return resultObj;
 				});
+		},
+		suggest: function(input) {
+			input = input.replace(wordsOnlyRegex, ' ');
+			return Promise.resolve(db.asyncFindAllByObject('content', { $regex: '^' + input + '.*', $options: 'i' }, 5));
 		}
 	};
 

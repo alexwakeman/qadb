@@ -6,8 +6,6 @@
  Then amongst single word matches, rank according to word count across data set
 
  Also looks for synonyms in word matches - and extracts accordingly - ranking them
-
- Must ignore self-referential synonyms - where a synonym is also an input word
  */
 
 var expect = require('chai').expect;
@@ -33,6 +31,9 @@ function setupUnionResults() {
 		new ObjectId(),
 		new ObjectId()
 	];
+	modLib.db = {
+		asyncFindOneByObject: sinon.stub()
+	};
 	modLib.db.asyncFindOneByObject.withArgs('word_index', {word: 'match1'})
 		.returns(Promise.resolve(new Promise((resolve, reject) => {
 			resolve({
@@ -97,7 +98,7 @@ function setupUnionResults() {
 				likes: 10,
 				dislikes: 5,
 				wordbag: ['example', 'question'],
-				urls:['http://example.com/question']
+				urls: ['http://example.com/question']
 			})
 		}));
 	modLib.db.asyncFindOneByObject.withArgs('content', {_id: _this.contentIds[1].toString()})
@@ -109,7 +110,7 @@ function setupUnionResults() {
 				likes: 4,
 				dislikes: 2,
 				wordbag: ['example', 'question'],
-				urls:['http://example.com/question']
+				urls: ['http://example.com/question']
 			})
 		}));
 	modLib.db.asyncFindOneByObject.withArgs('content', {_id: _this.contentIds[2].toString()})
@@ -121,7 +122,7 @@ function setupUnionResults() {
 				likes: 8,
 				dislikes: 5,
 				wordbag: ['example', 'question'],
-				urls:['http://example.com/question']
+				urls: ['http://example.com/question']
 			})
 		}));
 	modLib.db.asyncFindOneByObject.withArgs('content', {_id: _this.contentIds[3].toString()})
@@ -133,7 +134,7 @@ function setupUnionResults() {
 				likes: 1,
 				dislikes: 5,
 				wordbag: ['example', 'question'],
-				urls:['http://example.com/question']
+				urls: ['http://example.com/question']
 			})
 		}));
 	modLib.db.asyncFindOneByObject.withArgs('content', {_id: _this.contentIds[4].toString()})
@@ -145,7 +146,7 @@ function setupUnionResults() {
 				likes: 12,
 				dislikes: 5,
 				wordbag: ['example', 'question'],
-				urls:['http://example.com/question']
+				urls: ['http://example.com/question']
 			})
 		}));
 	modLib.db.asyncFindOneByObject.withArgs('content', {_id: _this.contentIds[5].toString()})
@@ -157,8 +158,73 @@ function setupUnionResults() {
 				likes: 4,
 				dislikes: 0,
 				wordbag: ['wordbag', 'content'],
-				urls:['http://other.com/word']
+				urls: ['http://other.com/word']
 			})
+		}));
+}
+
+function setupSuggestResults() {
+	_this.contentIds = [
+		new ObjectId("5774752c998e45c364e44ee4"),
+		new ObjectId("577475b8998e45c364e45191"),
+		new ObjectId(),
+		new ObjectId(),
+		new ObjectId(),
+		new ObjectId()
+	];
+	modLib.db = {
+		asyncFindAllByObject: sinon.stub()
+	};
+	modLib.db.asyncFindAllByObject.withArgs('content', {$regex: '^what .*', $options: 'i'}, 5)
+		.returns(new Promise((resolve, reject) => {
+			resolve([
+					{
+						_id: _this.contentIds[0],
+						question: "What question 1?",
+						answer: "Some answer 1",
+						likes: 10,
+						dislikes: 5,
+						wordbag: ['example', 'question'],
+						urls: ['http://example.com/question']
+					},
+					{
+						_id: _this.contentIds[1],
+						question: "What question 2?",
+						answer: "Some answer 2",
+						likes: 4,
+						dislikes: 2,
+						wordbag: ['example', 'question'],
+						urls: ['http://example.com/question']
+					},
+					{
+						_id: _this.contentIds[2],
+						question: "What question 3?",
+						answer: "Some answer 3",
+						likes: 8,
+						dislikes: 5,
+						wordbag: ['example', 'question'],
+						urls: ['http://example.com/question']
+					},
+					{
+						_id: _this.contentIds[3],
+						question: "What question 4?",
+						answer: "Some answer 4",
+						likes: 1,
+						dislikes: 5,
+						wordbag: ['example', 'question'],
+						urls: ['http://example.com/question']
+					},
+					{
+						_id: _this.contentIds[4],
+						question: "What referenced content? - 5",
+						answer: "Synonym ref'd content - 5",
+						likes: 12,
+						dislikes: 5,
+						wordbag: ['example', 'question'],
+						urls: ['http://example.com/question']
+					}
+				]
+			)
 		}));
 }
 
@@ -166,9 +232,6 @@ describe('search-utils', function () {
 	describe('performSearch', function () {
 
 		beforeEach(function () {
-			modLib.db = {
-				asyncFindOneByObject: sinon.stub()
-			};
 			setupUnionResults();
 			searchUtils = require('../utils/search-utils')(modLib);
 		});
@@ -221,7 +284,7 @@ describe('search-utils', function () {
 					return expect(results.data.qaResults[4]._id.toString()).to.equal(_this.contentIds[4].toString());
 				});
 		});
-		it('should not return duplicate results', function() {
+		it('should not return duplicate results', function () {
 			var input = 'match1 match2';
 			var uniqueEntries = [];
 			var allUnique = true;
@@ -229,19 +292,19 @@ describe('search-utils', function () {
 				.then((results) => {
 					results.data.qaResults.forEach((entry) => {
 						var entryId = entry._id.toString();
-						! ~ uniqueEntries.indexOf(entryId) ? uniqueEntries.push(entryId) : (allUnique = false);
+						!~uniqueEntries.indexOf(entryId) ? uniqueEntries.push(entryId) : (allUnique = false);
 					});
 					return expect(allUnique).to.be.true;
 				});
 		});
-		it('should include a set of synonym words if available in results object', function() {
+		it('should include a set of synonym words if available in results object', function () {
 			var input = 'match1 match2';
 			return searchUtils.performSearch(input)
 				.then((results) => {
 					return expect(results.data.synonyms).to.be.ok && expect(results.data.synonyms.length).to.equal(1);
 				});
 		});
-		it('should use word_bag words for further results an add to end of results list', function () {
+		it('should use word_bag words for further results and add to end of the results list', function () {
 			var input = 'match1 match2';
 			return searchUtils.performSearch(input)
 				.then((results) => {
@@ -268,17 +331,17 @@ describe('search-utils', function () {
 				});
 		});
 	});
-
 	describe('suggest', function () {
-		xit('should fetch at most 5 questions that match this given input', function () {
-			var input = 'what';
+		beforeEach(function () {
+			setupSuggestResults();
+			searchUtils = require('../utils/search-utils')(modLib);
+		});
+		it('should not pass any non-alpha chars to the database', function () {
+			var input = 'what()';
 			return searchUtils.suggest(input)
 				.then((results) => {
-					return expect(false).to.be.ok;
+					return expect(results.data.length).to.equal(5); // string passed to Mongo was 'what'
 				});
-		});
-		xit('should return an empty array if no matches questions match given input', function () {
-			return expect(false).to.be.ok;
 		});
 	});
 });

@@ -24,8 +24,8 @@ function setupUnionResults() {
 	var synWordObjId = new ObjectId();
 	var wordBagWordObjId = new ObjectId();
 	_this.contentIds = [
-		new ObjectId("5774752c998e45c364e44ee4"),
-		new ObjectId("577475b8998e45c364e45191"),
+		new ObjectId(),
+		new ObjectId(),
 		new ObjectId(),
 		new ObjectId(),
 		new ObjectId(),
@@ -165,8 +165,8 @@ function setupUnionResults() {
 
 function setupSuggestResults() {
 	_this.contentIds = [
-		new ObjectId("5774752c998e45c364e44ee4"),
-		new ObjectId("577475b8998e45c364e45191"),
+		new ObjectId(),
+		new ObjectId(),
 		new ObjectId(),
 		new ObjectId(),
 		new ObjectId(),
@@ -175,6 +175,7 @@ function setupSuggestResults() {
 	modLib.db = {
 		asyncFindAllByObject: sinon.stub()
 	};
+	// the $regex value here "what " has a space because the suggest() method replaces all non-alpha chars with a space
 	modLib.db.asyncFindAllByObject.withArgs('content', {$regex: '^what .*', $options: 'i'}, 5)
 		.returns(new Promise((resolve, reject) => {
 			resolve([

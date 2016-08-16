@@ -17,18 +17,17 @@ export class AppComponent {
     constructor(private usersService:UsersService) {
         this.usersService.getLoggedInUser()
             .then((user: User) => {
-                console.log(user);
                 this.user = user;
-                // console.log(this.user);
             }, () => {
-                // not logged in / unknown error
+                // not logged in
+                console.warn('No current user found! PLease create a user profile and log in.')
             });
     }
 
     logout() {
         this.usersService.logout()
             .then(() => {
-                window.location.href = '/';
-            })
+                window.location.href = '/login';
+            });
     }
 }

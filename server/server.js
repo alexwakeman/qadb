@@ -1,4 +1,3 @@
-
 /*
  Attention: - set ENABLE_AUTH to `true` and enable session security across the web app
  */
@@ -29,7 +28,7 @@ var dbAddr = 'mongodb://127.0.0.1:27017/qadb';
 // security
 // app.enable('trust proxy'); // only if you're behind a reverse proxy
 var apiLimiter = new RateLimit({
-	windowMs: 15*60*1000, // 15 minutes
+	windowMs: 15 * 60 * 1000, // 15 minutes
 	max: 100,
 	delayMs: 0 // disabled
 });
@@ -68,19 +67,18 @@ modLib.app.use(bodyParser.json({limit: '50mb'}));
 
 // ROUTING
 // base routes
-modLib.app.use('/', modLib.express.static(path.join(__dirname, '../dist/login/')));
-modLib.app.all(['/api', '/cms'], function (req, res, next) {
-	return ENABLE_AUTH ? req.session.isAuth ? next() : res.redirect('/') : next();
-});
+modLib.app.use('/', modLib.express.static(path.join(__dirname, '../dist/public/')));
+modLib.app.use('/login', modLib.express.static(path.join(__dirname, '../dist/login/')));
+modLib.app.all('/cms', (req, res, next) => ENABLE_AUTH ? req.session.isAuth ? next() : res.redirect('/login') : next());
+modLib.app.use('/cms', modLib.express.static(path.join(__dirname, '../dist/cms/')));
 
 // api routes
 var login = require('./routes/login')(modLib);
 var users = require('./routes/users')(modLib);
 modLib.app.use(login);
 modLib.app.use('/api', users);
-modLib.app.use('/cms', modLib.express.static(path.join(__dirname, '../dist/cms/')));
 
-var server = modLib.app.listen(port, function () {
+var server = modLib.app.listen(port, () => {
 	var port = server.address().port;
 	console.log('This express modLib.app is listening on port:' + port);
 });

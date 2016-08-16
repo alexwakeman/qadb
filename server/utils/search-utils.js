@@ -33,7 +33,6 @@ module.exports = function (modLib) {
 				7 - Add these wordbag matches into the final results
 				8 - Finally attach the synonyms to the results object, for display to the user
 			 */
-
 			return Promise
 				.all(wordIndexLookups)
 				.then((wordIndexDocs) => {

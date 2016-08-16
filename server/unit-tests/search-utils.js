@@ -239,7 +239,6 @@ describe('search-utils', function () {
 
 		it('should return a set of Q&A results that contains a union of two matched words first, followed by synonym unions', function () {
 			var input = 'match1 match2';
-
 			return searchUtils.performSearch(input)
 				.then((results) => {
 					return expect(results.data.qaResults[0]._id.toString()).to.equal(_this.contentIds[0].toString()) &&
@@ -332,6 +331,8 @@ describe('search-utils', function () {
 				});
 		});
 	});
+
+	//TODO: sort suggestions by likes
 	describe('suggest', function () {
 		beforeEach(function () {
 			setupSuggestResults();
@@ -342,6 +343,13 @@ describe('search-utils', function () {
 			return searchUtils.suggest(input)
 				.then((results) => {
 					return expect(results.data.length).to.equal(5); // string passed to Mongo was 'what'
+				});
+		});
+		it('should rank results by likes', function () {
+			var input = 'what';
+			return searchUtils.suggest(input)
+				.then((results) => {
+					return expect(false).to.be.ok;
 				});
 		});
 	});

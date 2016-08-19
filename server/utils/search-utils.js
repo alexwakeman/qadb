@@ -3,6 +3,8 @@ module.exports = function (modLib) {
 	var boundedStops = ["\\b\\d+\\b", "\\ba\\b", "\\bable\\b", "\\babout\\b", "\\bacross\\b", "\\bafter\\b", "\\ball\\b", "\\balmost\\b", "\\balso\\b", "\\bam\\b", "\\bamong\\b", "\\ban\\b", "\\band\\b", "\\bany\\b", "\\bare\\b", "\\bas\\b", "\\bat\\b", "\\bbe\\b", "\\bbecause\\b", "\\bbeen\\b", "\\bbut\\b", "\\bby\\b", "\\bcan\\b", "\\bcannot\\b", "\\bcould\\b", "\\bdear\\b", "\\bdid\\b", "\\bdo\\b", "\\bdoes\\b", "\\beither\\b", "\\belse\\b", "\\bever\\b", "\\bevery\\b", "\\bfor\\b", "\\bfrom\\b", "\\bget\\b", "\\bgot\\b", "\\bhad\\b", "\\bhas\\b", "\\bhave\\b", "\\bhe\\b", "\\bher\\b", "\\bhers\\b", "\\bhim\\b", "\\bhis\\b", "\\bhow\\b", "\\bhowever\\b", "\\bi\\b", "\\bif\\b", "\\bin\\b", "\\binto\\b", "\\bis\\b", "\\bit\\b", "\\bits\\b", "\\bjust\\b", "\\bleast\\b", "\\blet\\b", "\\blike\\b", "\\blikely\\b", "\\bmay\\b", "\\bme\\b", "\\bmight\\b", "\\bmost\\b", "\\bmust\\b", "\\bmy\\b", "\\bneither\\b", "\\bno\\b", "\\bnor\\b", "\\bnot\\b", "\\bof\\b", "\\boff\\b", "\\boften\\b", "\\bon\\b", "\\bonly\\b", "\\bor\\b", "\\bother\\b", "\\bour\\b", "\\bown\\b", "\\brather\\b", "\\bsaid\\b", "\\bsay\\b", "\\bsays\\b", "\\bshe\\b", "\\bshould\\b", "\\bsince\\b", "\\bso\\b", "\\bsome\\b", "\\bthan\\b", "\\bthat\\b", "\\bthe\\b", "\\btheir\\b", "\\bthem\\b", "\\bthen\\b", "\\bthere\\b", "\\bthese\\b", "\\bthey\\b", "\\bthis\\b", "\\btis\\b", "\\bto\\b", "\\btoo\\b", "\\btwas\\b", "\\bus\\b", "\\bwants\\b", "\\bwas\\b", "\\bwe\\b", "\\bwere\\b", "\\bwhat\\b", "\\bwhen\\b", "\\bwhere\\b", "\\bwhich\\b", "\\bwhile\\b", "\\bwho\\b", "\\bwhom\\b", "\\bwhy\\b", "\\bwill\\b", "\\bwith\\b", "\\bwould\\b", "\\byet\\b", "\\byou\\b", "\\byour\\b"];
 	var boundedStopsRegex = new RegExp(boundedStops.join('|'), 'g');
 	var wordsOnlyRegex = new RegExp('[^\\w\\s\\d]+', 'g'); // words, digits and whitespace only
+	const synonymSearchThreshold = 8; // if less than synonymSearchThreshold results from direct matches from input, use synonym lookup
+	const maxSynonymLookupResults = 10; // limit of synonym word referenced content
 	return {
 		performSearch: function (inputString) {
 			var input,
@@ -29,7 +31,7 @@ module.exports = function (modLib) {
 					if (inputWordIndexMatches.length === 0) throw new Error('No records found');
 					return inputWordIndexMatches;
 				})
-				.then(extractSortedContentRefs)
+				.then(extractSortedContentRefs(false))
 				.then(extractContent)
 				.then((content) => content.forEach((qaEntry) => resultObj.data.qaResults.push(qaEntry)))
 				.then(() => {
@@ -47,14 +49,17 @@ module.exports = function (modLib) {
 						synonyms.sort(sortByCount);
 						resultObj.data.synonyms = synonyms;
 					}
-					if (resultObj.data.qaResults.length < 10 && synonyms.length) { // if lacking results, and have synonyms
-						synonyms = synonyms.slice(0, Math.max(1, Math.min(5, Math.abs(synonyms.length / 2)))); // only take first half of sorted synonyms - don't want too many
+					/*
+						** Important! **
+						We only perform synonym word look-ups if results from user's actual input are lacking
+					 */
+					if (resultObj.data.qaResults.length < synonymSearchThreshold && synonyms.length) { // if lacking results, and have synonyms
 						synonyms.forEach((synonym) => synonymWordIndexLookups.push(db.asyncFindOneByObject('word_index_copy', { word: synonym.word } )));
 						return Promise.all(synonymWordIndexLookups);
 					}
 				})
 				.then((synonymMatches) => synonymMatches ? synonymMatches.filter((match) => match) : [])
-				.then(extractSortedContentRefs)
+				.then(extractSortedContentRefs(true))
 				.then(extractContent)
 				.then((content) => {
 					content.forEach((qaEntry) => resultObj.data.qaResults.push(qaEntry));
@@ -74,43 +79,58 @@ module.exports = function (modLib) {
 	};
 
 	/**
+	 * A factory function that limits the content refs for each word lookup if that word is from the synonyms list.
 	 *
-	 * Pure unions across each actual searched words are processed first. Then each of their synonym entries.
-	 * This is to ensure pure unions are at the top of the stack.
+	 * Pure unions across each actual searched word are processed first. Then each of their synonym entries union.
 	 *
-	 * @param wordIndexDocs
-	 * @returns {{results: Array}|Array}
+	 * Unions (cross referenced content_refs) are marked as non-distinct, i.e. the entry appears more than once while cross-referencing.
+	 *
+	 * Distinction must be drawn between synonym cross-referencing and synonym look-ups. If the results from the user's input are low
+	 * then synonym words are looked up independently of the user's input words. This tends to add a large bulk of results so, should be
+	 * limited.
+	 *
 	 */
-	function extractSortedContentRefs(wordIndexDocs) {
-		var distinctEntries = [], nonDistinctEntries = [], filteredDistinct;
-		if (!wordIndexDocs || wordIndexDocs.length === 0) {
-			return [];
-		}
-		wordIndexDocs.sort(sortByCount);
-		wordIndexDocs.forEach((wordIndexDoc) => {
-			wordIndexDoc.content_refs.forEach((contentRef) => {
-				var idString = contentRef.toString();
-				~ distinctEntries.indexOf(idString) ? ~ nonDistinctEntries.indexOf(idString) ?
-					distinctEntries.push(idString) : nonDistinctEntries.push(idString) : distinctEntries.push(idString);
-			});
-		});
-		wordIndexDocs.forEach((wordIndexDoc) => {
-			if (wordIndexDoc.synonyms) {
-				Object.keys(wordIndexDoc.synonyms).forEach((key) => {
-					var synonymObj = wordIndexDoc.synonyms[key];
-					var idString = synonymObj.references[0].toString();
-					// treat synonym cross-references as unions, i.e. high priority matches
+	function extractSortedContentRefs(isSynonymLookup) {
+		return (wordIndexDocs) => {
+			var distinctEntries = [], nonDistinctEntries = [], filteredDistinct;
+			if (!wordIndexDocs || wordIndexDocs.length === 0) {
+				return [];
+			}
+			wordIndexDocs.sort(sortByCount);
+			wordIndexDocs.forEach((wordIndexDoc) => {
+				var len = wordIndexDoc.content_refs.length;
+				var limit = isSynonymLookup ? maxSynonymLookupResults : len;
+				for (var i = 0; i < limit; i++) {
+					var contentRef = wordIndexDoc.content_refs[i];
+					var idString = contentRef.toString();
 					~ distinctEntries.indexOf(idString) ? ~ nonDistinctEntries.indexOf(idString) ?
 						distinctEntries.push(idString) : nonDistinctEntries.push(idString) : distinctEntries.push(idString);
+				}
+			});
+
+			if (!isSynonymLookup) {
+				// this section will push content refs up in priority if there is a synonym referencing it
+				wordIndexDocs.forEach((wordIndexDoc) => {
+					if (wordIndexDoc.synonyms) {
+						Object.keys(wordIndexDoc.synonyms).forEach((key) => {
+							var synonymObj = wordIndexDoc.synonyms[key];
+							var idString = synonymObj.references[0].toString();
+							// treat synonym cross-references as unions, i.e. high priority matches
+							~ distinctEntries.indexOf(idString) ? ~ nonDistinctEntries.indexOf(idString) ?
+								distinctEntries.push(idString) : nonDistinctEntries.push(idString) : distinctEntries.push(idString);
+						});
+					}
 				});
 			}
-		});
+			filteredDistinct = distinctEntries.filter((entry) => {
+				return ! ~ nonDistinctEntries.indexOf(entry); // remove duplicates
+			});
+			nonDistinctEntries = nonDistinctEntries.concat(filteredDistinct);
 
-		filteredDistinct = distinctEntries.filter((entry) => {
-			return !~nonDistinctEntries.indexOf(entry); // remove duplicates
-		});
-		nonDistinctEntries = nonDistinctEntries.concat(filteredDistinct);
-		return { results: nonDistinctEntries };
+			return { results: nonDistinctEntries };
+		};
+
+
 	}
 
 	function extractContent(sortedContentRefs) {

@@ -265,7 +265,7 @@ describe('search-utils', function () {
 				.then((results) => {
 					return expect(results).to.not.be.ok;
 				}, (error) => {
-					return expect(error.message).to.be.ok && expect(error.message).to.equal(errorMsg);
+					return expect(error).to.be.ok && expect(error.message).to.equal(errorMsg);
 				});
 		});
 		it('should return an empty results list when no matches are available', function () {
@@ -274,7 +274,7 @@ describe('search-utils', function () {
 				.then((results) => {
 					return expect(results).to.not.be.ok;
 				}, (error) => {
-					return expect(error.message).to.be.ok && expect(error.message).to.equal(errorMsg);
+					return expect(error).to.be.ok && expect(error.message).to.equal(errorMsg);
 				});
 		});
 		it('should look up synonyms in word_index and append content to the end of the results', function () {

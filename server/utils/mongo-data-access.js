@@ -171,9 +171,39 @@ MongoDataAccess.prototype = (function () {
 		 *
 		 * @param collectionName {String} name of the Mongo collection
 		 * @param whereObj {Object} a MongoClient query object
+		 * @param limit {Number} max number of results
+		 * @returns {*|promise} promise object
+		 */
+		asyncFindAllByObject: function (collectionName, whereObj, limit) {
+			// create promise object to return to caller
+			if (whereObj.hasOwnProperty('_id')) {
+				whereObj._id = new _ObjectID(whereObj._id);
+			}
+			return new Promise((resolve, reject) => {
+				_db.collection(collectionName, function (error, collection) {
+					if (error) {
+						console.error(error);
+						reject(error);
+						return;
+					}
+					collection.find(whereObj).limit(limit || 10).toArray(function (err, data) {
+						// finish promise process, always resolve because of chaining etc.
+						resolve(data);
+					});
+				});
+			});
+		},
+
+		/**
+		 *
+		 * @param collectionName {String} name of the Mongo collection
+		 * @param whereObj {Object} a MongoClient query object
 		 * @returns {*|promise} q promise object to await async process returning
 		 */
 		asyncFindOneByObject: function (collectionName, whereObj) {
+			if (whereObj.hasOwnProperty('_id') ) {
+				whereObj._id = new _ObjectID(whereObj._id);
+			}
 			return new Promise((resolve, reject) => {
 				_db.collection(collectionName, function (error, collection) {
 					if (error) {
@@ -228,30 +258,6 @@ MongoDataAccess.prototype = (function () {
 				collection.find(whereObj).toArray(function (error, doc) {
 					if (error) console.error(error);
 					callback(error, doc);
-				});
-			});
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param whereObj {Object} a MongoClient query object
-		 * @param limit {Number} max number of results
-		 * @returns {*|promise} promise object
-		 */
-		asyncFindAllByObject: function (collectionName, whereObj, limit) {
-			// create promise object to return to caller
-			return Promise((resolve, reject) => {
-				_db.collection(collectionName, function (error, collection) {
-					if (error) {
-						console.error(error);
-						reject(error);
-						return;
-					}
-					collection.find(whereObj).limit(limit || 10).toArray(function (err, data) {
-						// finish promise process, always resolve because of chaining etc.
-						resolve(data);
-					});
 				});
 			});
 		},

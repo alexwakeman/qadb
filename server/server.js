@@ -6,16 +6,14 @@ const ENABLE_AUTH = false;
  End security config
  */
 
+var MongoDataAccess = require('./utils/mongo-data-access');
 var modLib = {}; // an object containing re-usable cross-app components, avoids using globals
 modLib.express = require('express');
 modLib.app = modLib.express();
 modLib.authChecker = require('./utils/auth-utils').auth(ENABLE_AUTH);
-/*
- End Auth checker config
- */
-var MongoDataAccess = require('./utils/mongo-data-access');
 modLib.db = new MongoDataAccess();
 modLib.router = modLib.express.Router();
+modLib.searchUtils = require('./utils/search-utils')(modLib);
 
 var path = require('path');
 var bodyParser = require('body-parser');
@@ -75,8 +73,10 @@ modLib.app.use('/cms', modLib.express.static(path.join(__dirname, '../dist/cms/'
 // api routes
 var login = require('./routes/login')(modLib);
 var users = require('./routes/users')(modLib);
+var search = require('./routes/search')(modLib);
 modLib.app.use(login);
 modLib.app.use('/api', users);
+modLib.app.use('/api', search);
 
 var server = modLib.app.listen(port, () => {
 	var port = server.address().port;

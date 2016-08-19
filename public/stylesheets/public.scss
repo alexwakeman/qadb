@@ -1,0 +1,35 @@
+img.logo {
+    max-width: 190px;
+}
+
+.pad-top {
+    padding-top: 20px;
+}
+
+.search-label {
+    text-align: center;
+    padding-top: 7px;
+    padding-right: 4px;
+    label {
+        word-spacing: -1px;
+        letter-spacing: 0.05em;
+    }
+}
+
+.search-box {
+    padding-left: 2px;
+    padding-right: 0;
+    input[type="text"] {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+    }
+}
+
+.search-btn {
+    padding-left: 0;
+    text-align: left;
+    button {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+}

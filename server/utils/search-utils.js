@@ -14,78 +14,57 @@ module.exports = function (modLib) {
 				};
 			var wordIndexLookups = [];
 			var synonymWordIndexLookups = [];
-			var inputWordList = [];
+			var synonyms = [];
+			var inputWordIndexMatches = [];
+
 			inputString = inputString.toLowerCase();
 			inputString = inputString.replace(boundedStopsRegex, ''); // remove unnecessary words (stop words)
 			inputString = inputString.replace(wordsOnlyRegex, ''); // remove all non-alpha chars
 			input = inputString.split(' ');
-			input.forEach((word) => wordIndexLookups.push(db.asyncFindOneByObject('word_index', { word: word })));
-
-			/*
-				What is this Promise chain doing?
-
-				1 - Lookup matches in the Mongo word_index collection for the give input, if none, return empty results
-				2 - Each word_index entry potentially has a set of synonyms, so look these up in word_index too
-				3 - Add all these word_index docs to inputWordList
-				4 - Extract the content references in an order most useful to the user, i.e. with word unions, synonym unions, and sorted by word count etc.
-				5 - Extract the actual content Question and Answer documents from the content collection
-				6 - Each Q&A document contains a "wordbag" array of words used in the question - so look these up to in the word_index too
-				7 - Add these wordbag matches into the final results
-				8 - Finally attach the synonyms to the results object, for display to the user
-			 */
+			input.forEach((word) => wordIndexLookups.push(db.asyncFindOneByObject('word_index_copy', {word: word})));
 			return Promise
 				.all(wordIndexLookups)
 				.then((wordIndexDocs) => {
-					wordIndexDocs = wordIndexDocs.filter((entry) => entry); // ensure each entry is valid (exists)
-					if (!wordIndexDocs || wordIndexDocs.length === 0) throw new Error('No records found');
-					inputWordList.push(...wordIndexDocs);
-					inputWordList.forEach((wordIndexDoc) => {
-						if (!wordIndexDoc.synonyms) return false;
-						Object.keys(wordIndexDoc.synonyms).forEach((key) => {
-							var synonymObj = wordIndexDoc.synonyms[key];
-							synonymWordIndexLookups.push(db.asyncFindOneByObject('word_index', { word: synonymObj.word }));
-						});
-					});
-					return Promise.all(synonymWordIndexLookups)
+					inputWordIndexMatches = wordIndexDocs.filter((entry) => entry); // ensure each entry is valid (exists)
+					if (inputWordIndexMatches.length === 0) throw new Error('No records found');
+					return inputWordIndexMatches;
 				})
-				.then((synonymDocs) => inputWordList.push(...synonymDocs))
-				.then(() => inputWordList)
 				.then(extractSortedContentRefs)
 				.then(extractContent)
 				.then((content) => content.forEach((qaEntry) => resultObj.data.qaResults.push(qaEntry)))
 				.then(() => {
-					var wordBagRequests = [];
-					resultObj.data.qaResults.forEach((qa) => qa.wordbag.forEach(
-						(word) => wordBagRequests.push(db.asyncFindOneByObject('word_index', { word: word })))
-					);
-					return Promise.all(wordBagRequests);
+					inputWordIndexMatches.forEach((wordIndexDoc) => {
+						if (!wordIndexDoc.synonyms) return false;
+						Object.keys(wordIndexDoc.synonyms).forEach((key) => {
+							var synonymObj;
+							if (!~input.indexOf(key)) { // ensure the entry is not an input word
+								synonymObj = wordIndexDoc.synonyms[key];
+								synonyms.push(synonymObj);
+							}
+						});
+					});
+					if (synonyms.length) {
+						synonyms.sort(sortByCount);
+						resultObj.data.synonyms = synonyms;
+					}
+					if (resultObj.data.qaResults.length < 10 && synonyms.length) { // if lacking results, and have synonyms
+						synonyms = synonyms.slice(0, Math.max(1, Math.min(5, Math.abs(synonyms.length / 2)))); // only take first half of sorted synonyms - don't want too many
+						synonyms.forEach((synonym) => synonymWordIndexLookups.push(db.asyncFindOneByObject('word_index_copy', { word: synonym.word } )));
+						return Promise.all(synonymWordIndexLookups);
+					}
 				})
+				.then((synonymMatches) => synonymMatches ? synonymMatches.filter((match) => match) : [])
 				.then(extractSortedContentRefs)
 				.then(extractContent)
-				.then((wordBagContent) => {
-					// need to ensure the word bag content is not already present in the results
-					var contentEntries = [];
-					resultObj.data.qaResults.forEach((entry) => {
-						var entryId = entry._id.toString();
-						contentEntries.push(entryId);
-					});
-
-					wordBagContent.forEach((wordbagQaEntry) => {
-						! ~ contentEntries.indexOf(wordbagQaEntry._id.toString()) ? resultObj.data.qaResults.push(wordbagQaEntry) : null;
-					})
-				})
-				.then(() => inputWordList)
-				.then(extractSynonymList)
-				.then((synonyms) => {
-					synonyms = synonyms.filter((entry) => ! ~ input.indexOf(entry.word));
-					resultObj.data.synonyms = synonyms;
+				.then((content) => {
+					content.forEach((qaEntry) => resultObj.data.qaResults.push(qaEntry));
 					return resultObj;
 				});
 		},
 
-		suggest: function(input) {
+		suggest: function (input) {
 			input = input.replace(wordsOnlyRegex, '');
-			return Promise.resolve(db.asyncFindAllByObject('content', { $regex: '^' + input + '.*', $options: 'i' }, 5))
+			return Promise.resolve(db.asyncFindAllByObject('content', { 'question': { $regex: '^' + input + '.*', $options: 'i' } }, 5))
 				.then((results) => {
 					return {
 						data: results
@@ -95,19 +74,18 @@ module.exports = function (modLib) {
 	};
 
 	/**
-	 * Sorts a set of content references from the word index, by checking for unions of content references
-	 * within each word index entry, i.e. distinct and non-distinct entries, where non-distinct means a union was found.
-	 * This content is a better result.
 	 *
-	 * Also checks for each word's synonym matches, and uses these references as unions also,
-	 * but with reduced priority (exact unions of the user's search terms is ideal).
+	 * Pure unions across each actual searched words are processed first. Then each of their synonym entries.
+	 * This is to ensure pure unions are at the top of the stack.
 	 *
-	 * If there is not many results, we can look up the synonym in the word_index and use it's content references as well.
 	 * @param wordIndexDocs
-	 * @returns {{results: Array}}
+	 * @returns {{results: Array}|Array}
 	 */
 	function extractSortedContentRefs(wordIndexDocs) {
 		var distinctEntries = [], nonDistinctEntries = [], filteredDistinct;
+		if (!wordIndexDocs || wordIndexDocs.length === 0) {
+			return [];
+		}
 		wordIndexDocs.sort(sortByCount);
 		wordIndexDocs.forEach((wordIndexDoc) => {
 			wordIndexDoc.content_refs.forEach((contentRef) => {
@@ -129,33 +107,26 @@ module.exports = function (modLib) {
 		});
 
 		filteredDistinct = distinctEntries.filter((entry) => {
-			return ! ~ nonDistinctEntries.indexOf(entry); // remove duplicates
+			return !~nonDistinctEntries.indexOf(entry); // remove duplicates
 		});
-		nonDistinctEntries.push(...filteredDistinct);
+		nonDistinctEntries = nonDistinctEntries.concat(filteredDistinct);
 		return { results: nonDistinctEntries };
-	}
-
-	function extractSynonymList(wordIndexDocs) {
-		var synonymList = [];
-		wordIndexDocs.forEach((wordIndexDoc) => {
-			if (wordIndexDoc.synonyms) {
-				Object.keys(wordIndexDoc.synonyms).forEach((key) => {
-					var synonymObj = wordIndexDoc.synonyms[key];
-					var entry = { word: synonymObj.word, count: synonymObj.count };
-					! ~ synonymList.indexOf(entry) ? synonymList.push(entry) : null;
-				});
-				synonymList.sort(sortByCount);
-			}
-		});
-
-		return synonymList;
 	}
 
 	function extractContent(sortedContentRefs) {
 		var contentLookups = [];
-		sortedContentRefs.results.forEach((matchRef) => contentLookups.push(db.asyncFindOneByObject('content', { _id: matchRef })));
+		if (!sortedContentRefs || sortedContentRefs.length === 0) {
+			return contentLookups;
+		}
+		sortedContentRefs.results.forEach((matchRef) => {
+			contentLookups.push(db.asyncFindOneByObject('content', {_id: matchRef}))
+		});
 		return Promise.all(contentLookups);
 	}
 
-	function sortByCount(a, b) { return a.count < b.count ? 1 : a.count > b.count ? -1 : 0 }
+	function sortByCount(a, b) {
+		a.count = parseInt(a.count);
+		b.count = parseInt(b.count);
+		return a.count < b.count ? 1 : a.count > b.count ? -1 : 0
+	}
 };

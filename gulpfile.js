@@ -20,11 +20,16 @@ var dependencies = [
 	srcDest('node_modules/@angular/**/bundles/*.umd.js', 'dist/cms/libs/@angular'),
 	srcDest('node_modules/rxjs/**/*.js', 'dist/cms/libs/rxjs'),
 	/*
+		CMS Login
+	 */
+	srcDest('node_modules/bootstrap/dist/**/*', 'dist/login/libs/bootstrap'),
+	/*
 		Public site
 	 */
 	srcDest('node_modules/bootstrap/dist/**/*', 'dist/public/libs/bootstrap'),
 	srcDest('node_modules/react/dist/react.js', 'dist/public/libs/react'),
-	srcDest('node_modules/react-dom/dist/react-dom.js', 'dist/public/libs/react-dom')
+	srcDest('node_modules/react-dom/dist/react-dom.js', 'dist/public/libs/react-dom'),
+	srcDest('node_modules/rxjs/**/*.js', 'dist/public/libs/rxjs')
 ];
 
 gulp.task('clean', function () {
@@ -48,19 +53,17 @@ gulp.task('cms:app', ['cms:loader'], function () {
 gulp.task('cms:html', function() {
 	gulp.src('cms/**/*.html')
 		.pipe(gulp.dest('dist/cms'));
-	gulp.src('cms/index.html')
+	return gulp.src('cms/index.html')
 		.pipe(gulp.dest('dist/cms'));
 });
 
 gulp.task('cms:login', function () {
-	gulp.src('node_modules/bootstrap/dist/**/*')
-		.pipe(gulp.dest('dist/login/bootstrap'));
 	return gulp.src('login/**/*')
 		.pipe(gulp.dest('dist/login'));
 });
 
 gulp.task('cms:loader', function() {
-	gulp.src('cms/loader/systemjs.config.js')
+	return gulp.src('cms/loader/systemjs.config.js')
 		.pipe(gulp.dest('dist/cms/loader'));
 });
 
@@ -77,7 +80,9 @@ gulp.task('public:app', function () {
 });
 
 gulp.task('public:html', function() {
-	gulp.src('public/index.html')
+	gulp.src('public/img/**/*')
+		.pipe(gulp.dest('dist/public/img'));
+	return gulp.src('public/index.html')
 		.pipe(gulp.dest('dist/public'));
 });
 
@@ -109,7 +114,7 @@ gulp.task('server', function() { // starts and restarts the node server
 });
 
 gulp.task('build', function (callback) {
-	runSequence('clean', 'libs', 'cms:loader', 'cms:app', 'cms:html', 'cms:login', 'cms:sass',
+	runSequence('clean', 'libs', 'cms:app', 'cms:html', 'cms:login', 'cms:sass',
 		'public:app', 'public:sass', 'public:html', callback);
 });
 
@@ -118,7 +123,6 @@ gulp.task('default', ['build']);
 /*
  Utility functions
  */
-
 function srcDest(src, dest) {
 	if (!src || !dest) throw new Error('Both source and destination are required.');
 	return {

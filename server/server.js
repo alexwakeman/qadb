@@ -1,9 +1,17 @@
 /*
- Attention: - set ENABLE_AUTH to `true` and enable session security across the web app
+	CONFIGURATION
+ 	Attention: - set ENABLE_AUTH to `true` and enable session security across the web app
+
+ 	to enable production mode, run as:
+ 	```
+ 	$ user@host: node server/server.js production
+ 	```
  */
 const ENABLE_AUTH = false;
+var IS_PRODUCTION = false;
+process.argv.forEach((arg) => arg == 'production' ? (IS_PRODUCTION = true) : (IS_PRODUCTION = false));
 /*
- End security config
+ 	End config
  */
 
 var MongoDataAccess = require('./utils/mongo-data-access');
@@ -14,6 +22,8 @@ modLib.authChecker = require('./utils/auth-utils').auth(ENABLE_AUTH);
 modLib.db = new MongoDataAccess();
 modLib.router = modLib.express.Router();
 modLib.searchUtils = require('./utils/search-utils')(modLib);
+modLib.config = require('./config/config');
+modLib.config.SERVER = IS_PRODUCTION ? modLib.config.PROD_SERVER : modLib.config.DEV_SERVER;
 
 var path = require('path');
 var bodyParser = require('body-parser');
@@ -55,7 +65,7 @@ modLib.app.use(session({ // req.session is populated
 		path: '/',
 		maxAge: new Date(Date.now() + time),
 		httpOnly: true,
-		domain: 'localhost'
+		domain: modLib.config.SERVER
 	}
 }));
 
@@ -78,7 +88,7 @@ modLib.app.use(login);
 modLib.app.use('/api', users);
 modLib.app.use('/api', search);
 
-var server = modLib.app.listen(port, () => {
+var server = modLib.app.listen(port, modLib.config, () => {
 	var port = server.address().port;
-	console.log('This express modLib.app is listening on port:' + port);
+	console.log('This express QADB modLib.app is listening on port:' + port);
 });

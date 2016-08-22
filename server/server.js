@@ -88,7 +88,7 @@ modLib.app.use(login);
 modLib.app.use('/api', users);
 modLib.app.use('/api', search);
 
-var server = modLib.app.listen(port, modLib.config, () => {
+var server = modLib.app.listen(port, modLib.config.SERVER, () => {
 	var port = server.address().port;
 	console.log('This express QADB modLib.app is listening on port:' + port);
 });

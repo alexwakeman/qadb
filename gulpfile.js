@@ -29,7 +29,8 @@ var dependencies = [
 	srcDest('node_modules/bootstrap/dist/**/*', 'dist/public/libs/bootstrap'),
 	srcDest('node_modules/react/dist/react.js', 'dist/public/libs/react'),
 	srcDest('node_modules/react-dom/dist/react-dom.js', 'dist/public/libs/react-dom'),
-	srcDest('node_modules/rxjs/**/*.js', 'dist/public/libs/rxjs')
+	srcDest('node_modules/rxjs/**/*.js', 'dist/public/libs/rxjs'),
+	srcDest('node_modules/wolfy87-eventemitter/EventEmitter.js', 'dist/public/libs/eventemitter')
 ];
 
 gulp.task('clean', function () {

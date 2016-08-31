@@ -75,6 +75,15 @@ modLib.app.use(bodyParser.json({limit: '50mb'}));
 
 // ROUTING
 // base routes
+var regEx = new RegExp('/site/.*');
+modLib.app.use(function(req, res, next) {
+	if (regEx.test(req.url)) {
+		req.url = req.url.replace(/\/site\/\w+\/\w+\/?/, '/');
+	}
+	console.log(req.url);
+	next();
+});
+
 modLib.app.use('/', modLib.express.static(path.join(__dirname, '../dist/public/')));
 modLib.app.use('/login', modLib.express.static(path.join(__dirname, '../dist/login/')));
 modLib.app.all('/cms', (req, res, next) => ENABLE_AUTH ? req.session.isAuth ? next() : res.redirect('/login') : next());

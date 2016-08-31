@@ -38,6 +38,7 @@ export class SearchForm extends React.Component<SearchFormProps, SearchFormState
     openSearchResults(evt:any) {
         evt.preventDefault();
         browserHistory.push('/#/search/' + this.state.searchTerm);
+        this.props.eventEngine.emitEvent('UPDATE_VIEW', []);
     }
 
     render() {

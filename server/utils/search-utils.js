@@ -74,6 +74,7 @@ module.exports = function (modLib) {
 		},
 
 		suggest: function (input) {
+			if (!input) return Promise.resolve({data: []});
 			input = input.replace(wordsOnlyRegex, '');
 			return Promise.resolve(db.asyncFindAllByObject('content', { 'question': { $regex: '^' + input + '.*', $options: 'i' } }, 5))
 				.then((results) => {

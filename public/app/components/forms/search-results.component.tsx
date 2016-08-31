@@ -1,7 +1,8 @@
 import * as React from "react";
 import {Utils} from "../../utils/utils";
+import {ReactRouter} from "../../utils/router";
 
-interface SearchResultsProps { params: any }
+interface SearchResultsProps { router: ReactRouter }
 interface SearchResultsState { searchResults: any }
 
 export class SearchResults extends React.Component<SearchResultsProps, SearchResultsState> {
@@ -11,7 +12,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
     }
 
     componentWillMount() {
-        this.searchTerm = this.props.params.term;
+        this.searchTerm = this.props.router.getParam();
         this.setState({ searchResults: [] });
         Utils.get('search', this.searchTerm, (response: any) => {
             console.log(response);
@@ -24,7 +25,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
             <h5>Search Results</h5>
             {this.state.searchResults.map((searchResult: any, i: number) => {
                 return <div className="row" key={i}>
-                        <a href={'/#/qa/' + searchResult._id} key={searchResult._id}>{searchResult.question}&nbsp;</a>
+                        <a href={'/#/site/qa/' + searchResult._id} key={searchResult._id}>{searchResult.question}&nbsp;</a>
                     </div>
             })}
         </div>

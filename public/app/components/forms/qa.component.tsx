@@ -1,7 +1,8 @@
 import * as React from "react";
 import {Utils} from "../../utils/utils";
+import {ReactRouter} from "../../utils/router";
 
-interface QuestionAnswerProps { params: any }
+interface QuestionAnswerProps { router: ReactRouter }
 interface QuestionAnswerState { qa: any }
 
 export class QuestionAnswer extends React.Component<QuestionAnswerProps, QuestionAnswerState> {
@@ -15,7 +16,7 @@ export class QuestionAnswer extends React.Component<QuestionAnswerProps, Questio
     }
 
     componentDidMount() {
-        this.id = this.props.params.id;
+        this.id = this.props.router.getParam();
         Utils.get('qa', this.id, (response: any) => {
             console.log(response);
             this.setState({ qa: response.data });

@@ -19,11 +19,17 @@ module.exports = function (modLib) {
 			var synonyms = [];
 			var inputWordIndexMatches = [];
 
+			if (!inputString || typeof inputString !== 'string') return Promise.resolve(resultObj);
+
 			inputString = inputString.toLowerCase();
 			inputString = inputString.replace(boundedStopsRegex, ''); // remove unnecessary words (stop words)
 			inputString = inputString.replace(wordsOnlyRegex, ''); // remove all non-alpha chars
+
+			if (!inputString) return Promise.resolve(resultObj);
+
 			input = inputString.split(' ');
 			input.forEach((word) => wordIndexLookups.push(db.asyncFindOneByObject('word_index_copy', {word: word})));
+
 			return Promise
 				.all(wordIndexLookups)
 				.then((wordIndexDocs) => {

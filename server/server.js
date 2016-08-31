@@ -84,9 +84,11 @@ modLib.app.use('/cms', modLib.express.static(path.join(__dirname, '../dist/cms/'
 var login = require('./routes/login')(modLib);
 var users = require('./routes/users')(modLib);
 var search = require('./routes/search')(modLib);
+var qa = require('./routes/qa')(modLib);
 modLib.app.use(login);
 modLib.app.use('/api', users);
 modLib.app.use('/api', search);
+modLib.app.use('/api', qa);
 
 var server = modLib.app.listen(port, modLib.config.SERVER, () => {
 	var port = server.address().port;

@@ -101,7 +101,7 @@ gulp.task('watch', ['build', 'server'], function() {
 
 	gulp.watch('public/stylesheets/*.scss', ['public:sass']);
 	gulp.watch('public/**/*.html', ['public:html']);
-	gulp.watch('public/**/*.tsx', ['public:app']);
+	gulp.watch('public/**/*.+(tsx|ts)', ['public:app']);
 });
 
 gulp.task('server', function() { // starts and restarts the node server

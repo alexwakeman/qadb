@@ -1,33 +1,31 @@
 import * as React from "react";
-import * as EventEmitter from 'wolfy87-eventemitter';
-import {Const} from "../../const/const";
+import {Utils} from "../../utils/utils";
 
-interface SearchResultsProps { eventEngine: EventEmitter }
+interface SearchResultsProps { params: any }
 interface SearchResultsState { searchResults: any }
 
 export class SearchResults extends React.Component<SearchResultsProps, SearchResultsState> {
+    private searchTerm: string;
     constructor() {
         super();
-        this.updateHandler = this.updateHandler.bind(this);
     }
 
     componentWillMount() {
+        this.searchTerm = this.props.params.term;
         this.setState({ searchResults: [] });
-    }
-
-    componentDidMount() {
-        this.props.eventEngine.on(Const.SUGGEST_RESULT_EVT, this.updateHandler);
-    }
-
-    updateHandler(updatedSearchResults: any) {
-        this.setState({ searchResults: updatedSearchResults });
+        Utils.get('search', this.searchTerm, (response: any) => {
+            console.log(response);
+            this.setState({ searchResults: response.data.qaResults });
+        });
     }
 
     render() {
         return <div className="suggest-list col-sm-6 col-xs-offset-3 text-center">
             <h5>Search Results</h5>
-            {this.state.searchResults.map((searchResult: any) => {
-                return <a href={'/qa/' + searchResult._id} key={searchResult._id}>{searchResult.question}&nbsp;</a>
+            {this.state.searchResults.map((searchResult: any, i: number) => {
+                return <div className="row" key={i}>
+                        <a href={'/#/qa/' + searchResult._id} key={searchResult._id}>{searchResult.question}&nbsp;</a>
+                    </div>
             })}
         </div>
     }

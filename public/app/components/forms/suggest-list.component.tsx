@@ -26,7 +26,7 @@ export class SuggestList extends React.Component<SuggestListProps, SuggestListSt
     render() {
         return <div className="suggest-list col-sm-6 col-xs-offset-3 text-center">
             {this.state.suggestionList.map((suggestion: any) => {
-                return <a href={'/qa/' + suggestion._id} key={suggestion._id}>{suggestion.question}&nbsp;</a>
+                return <a href={'/#/qa/' + suggestion._id} key={suggestion._id}>{suggestion.question}&nbsp;</a>
             })}
         </div>
     }

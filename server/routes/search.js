@@ -1,7 +1,7 @@
 
 module.exports = function(modLib) {
 	modLib.router.route('/suggest')
-		.get(modLib.authChecker, function (req, res) {
+		.get(function (req, res) {
 			var query = req.query.input;
 			modLib.searchUtils.suggest(query)
 				.then((results) => {
@@ -11,7 +11,7 @@ module.exports = function(modLib) {
 				});
 		});
 	modLib.router.route('/search')
-		.get(modLib.authChecker, function (req, res) {
+		.get(function (req, res) {
 			var query = req.query.input;
 			modLib.searchUtils.performSearch(query)
 				.then((results) => {

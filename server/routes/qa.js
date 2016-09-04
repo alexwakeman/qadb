@@ -5,7 +5,7 @@ module.exports = function(modLib) {
 			var id = req.query.input;
 			modLib.db.asyncFindOneByObject('content', {_id: id})
 				.then((results) => {
-					res.json({data: results });
+					res.json({ data: results });
 				}, () => {
 					res.send('');
 				});

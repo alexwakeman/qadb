@@ -2,17 +2,16 @@
 
 import * as React from "react";
 import * as EventEmitter from 'wolfy87-eventemitter';
+import * as ReactDOM from 'react-dom';
 
 import { Heading } from './components/heading/heading.component';
 import { SearchForm } from './components/forms/search';
 import { SearchResults } from './components/forms/search-results.component';
 import { QuestionAnswer } from './components/forms/qa.component';
-import * as ReactDOM from 'react-dom';
-import {ReactRouter} from "./utils/router";
-import { browserHistory } from 'react-router';
+import {ReactRouter, RouterConfig} from "./utils/router";
+import {Const} from "./const/const";
 
-var ee: EventEmitter = new EventEmitter();
-var router: ReactRouter = new ReactRouter([
+let routeConfigs: Array<RouterConfig> = [
     {
         component: SearchResults,
         route: '/search/:term'
@@ -21,7 +20,9 @@ var router: ReactRouter = new ReactRouter([
         component: QuestionAnswer,
         route: '/qa/:id'
     }
-]);
+];
+var ee: EventEmitter = new EventEmitter();
+var router: ReactRouter = new ReactRouter(routeConfigs, ee);
 
 interface AppState { Elem: any }
 
@@ -37,26 +38,33 @@ export class App extends React.Component<{}, AppState> {
     constructor() {
         super();
         this.navigated = this.navigated.bind(this);
-        browserHistory.push('/#/');
-        ee.on('UPDATE_VIEW', this.navigated);
     }
 
     componentWillMount() {
         this.setState({Elem: DefaultComponent});
     }
 
+    componentDidMount() {
+        window.onhashchange = this.navigated;
+        this.navigated();
+    }
+
     navigated() {
         this.outComponent = router.getCurrentComponent();
-        this.setState({Elem: this.outComponent});
+        if (this.outComponent) {
+            this.setState({Elem: this.outComponent});
+        } else {
+            this.setState({Elem: DefaultComponent});
+        }
     }
 
     render() {
-        var Out = this.state.Elem;
+        let Out = this.state.Elem;
         return (
             <div className="container-fluid">
                 <Heading logoUrl="/img/logo.png" greeting="QADB" />
-                <SearchForm eventEngine={ee} availableQAs={3450}/>
-                <Out router={router} />
+                <SearchForm eventEngine={ee} availableQAs={3450} router={router}/>
+                <Out router={router} eventEngine={ee} />
             </div>
         );
     }

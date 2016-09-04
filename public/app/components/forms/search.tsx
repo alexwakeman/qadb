@@ -4,13 +4,13 @@ import * as EventEmitter from 'wolfy87-eventemitter';
 import {Const} from "../../const/const";
 import {Utils} from "../../utils/utils";
 import {SuggestList} from './suggest-list.component';
-import { browserHistory } from 'react-router';
+import {ReactRouter} from "../../utils/router";
 
 // RxJS Operators
 import 'rxjs/add/observable/fromEvent';
 import 'rxjs/add/operator/debounceTime';
 
-export interface SearchFormProps { availableQAs: number; eventEngine: EventEmitter }
+export interface SearchFormProps { availableQAs: number; eventEngine: EventEmitter, router: ReactRouter }
 export interface SearchFormState { searchTerm: string; }
 
 export class SearchForm extends React.Component<SearchFormProps, SearchFormState> {
@@ -37,8 +37,7 @@ export class SearchForm extends React.Component<SearchFormProps, SearchFormState
 
     openSearchResults(evt:any) {
         evt.preventDefault();
-        browserHistory.push('/#/search/' + this.state.searchTerm);
-        this.props.eventEngine.emitEvent('UPDATE_VIEW', []);
+        this.props.router.setPath('search', this.state.searchTerm);
     }
 
     render() {
@@ -57,7 +56,7 @@ export class SearchForm extends React.Component<SearchFormProps, SearchFormState
                     </div>
                 </form>
             </div>
-            <SuggestList eventEngine={this.props.eventEngine} />
+            <SuggestList eventEngine={this.props.eventEngine} router={this.props.router} />
         </div>;
     }
 }

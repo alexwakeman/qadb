@@ -1,14 +1,17 @@
 import * as React from "react";
 import {Utils} from "../../utils/utils";
 import {ReactRouter} from "../../utils/router";
+import * as EventEmitter from 'wolfy87-eventemitter';
+import {Const} from "../../const/const";
 
-interface QuestionAnswerProps { router: ReactRouter }
+interface QuestionAnswerProps { eventEngine: EventEmitter, router: ReactRouter }
 interface QuestionAnswerState { qa: any }
 
 export class QuestionAnswer extends React.Component<QuestionAnswerProps, QuestionAnswerState> {
     private id:string;
     constructor() {
         super();
+        this.updateHandler = this.updateHandler.bind(this);
     }
 
     componentWillMount() {
@@ -16,18 +19,28 @@ export class QuestionAnswer extends React.Component<QuestionAnswerProps, Questio
     }
 
     componentDidMount() {
+        this.props.eventEngine.on(Const.UPDATE_VIEW, this.updateHandler);
+        this.fetchQA();
+    }
+
+    updateHandler() {
+        this.fetchQA();
+    }
+
+    fetchQA() {
         this.id = this.props.router.getParam();
         Utils.get('qa', this.id, (response: any) => {
-            console.log(response);
             this.setState({ qa: response.data });
         });
     }
 
     render() {
-        return <div className="suggest-list col-sm-6 col-xs-offset-3 text-center">
-            <h5>Answer</h5>
-            <h6>{this.state.qa.question}</h6>
-            <span>{this.state.qa.answer}</span>
-        </div>
+        return (
+            <div className="suggest-list col-sm-6 col-xs-offset-3 text-center">
+                <h5>Answer</h5>
+                <h6>{this.state.qa.question}</h6>
+                <span>{this.state.qa.answer}</span>
+            </div>
+        )
     }
 }

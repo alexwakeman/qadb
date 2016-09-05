@@ -15,9 +15,9 @@ export interface SearchFormState { searchTerm: string; }
 
 export class SearchForm extends React.Component<SearchFormProps, SearchFormState> {
     private input: HTMLInputElement;
-
     constructor() {
         super();
+        // bind event listeners to this React.Component instance
         this.openSearchResults = this.openSearchResults.bind(this);
         this.onChangeHandler = this.onChangeHandler.bind(this);
         this.applySearchParamToView = this.applySearchParamToView.bind(this);

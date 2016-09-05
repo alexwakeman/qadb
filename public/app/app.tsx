@@ -14,11 +14,11 @@ import {Const} from "./const/const";
 let routeConfigs: Array<RouterConfig> = [
     {
         component: SearchResults,
-        route: '/search/:term'
+        route: Const.SEARCH_PATH
     },
     {
         component: QuestionAnswer,
-        route: '/qa/:id'
+        route: Const.QA_PATH
     }
 ];
 var ee: EventEmitter = new EventEmitter();
@@ -26,36 +26,13 @@ var router: ReactRouter = new ReactRouter(routeConfigs, ee);
 
 interface AppState { Elem: any }
 
-class DefaultComponent extends React.Component<{}, {}> {
-    render() {
-        return <link />
-    }
-}
-
 export class App extends React.Component<{}, AppState> {
-    private outComponent: any;
-
     constructor() {
         super();
-        this.navigated = this.navigated.bind(this);
     }
 
     componentWillMount() {
-        this.setState({Elem: DefaultComponent});
-    }
-
-    componentDidMount() {
-        window.onhashchange = this.navigated;
-        this.navigated();
-    }
-
-    navigated() {
-        this.outComponent = router.getCurrentComponent();
-        if (this.outComponent) {
-            this.setState({Elem: this.outComponent});
-        } else {
-            this.setState({Elem: DefaultComponent});
-        }
+        router.assignAppInstance(this);
     }
 
     render() {

@@ -7,7 +7,7 @@ module.exports = function(modLib) {
 				.then((results) => {
 					res.json(results);
 				}, () => {
-					res.send('');
+					res.json({});
 				});
 		});
 	modLib.router.route('/search')
@@ -17,7 +17,9 @@ module.exports = function(modLib) {
 				.then((results) => {
 					res.json(results);
 				}, () => {
-					res.send('');
+					res.send({data: {
+						qaResults: []
+					}});
 				});
 		});
 	return modLib.router;

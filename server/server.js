@@ -29,6 +29,7 @@ var path = require('path');
 var bodyParser = require('body-parser');
 var RateLimit = require('express-rate-limit');
 var helmet = require('helmet');
+require('./utils/helpers');
 
 var port = process.env.PORT || 3000;
 var dbAddr = 'mongodb://127.0.0.1:27017/qadb';

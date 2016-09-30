@@ -56,12 +56,12 @@ export class SearchForm extends React.Component<SearchFormProps, SearchFormState
         return (
             <div className='col-sm-12 pad-top'>
                 <div className='col-sm-6 col-xs-offset-3 text-center'>
-                    <form onSubmit={this.openSearchResults}>
+                    <form onSubmit={this.openSearchResults} autoComplete="off">
                         <div className='col-md-3 col-sm-12 search-label'><label
                             htmlFor='search-box'>Ask a question: </label></div>
                         <div className='col-md-7 col-xs-10 search-box'>
                             <input type='text' className='form-control' id='search-box' placeholder='...?'
-                                   ref={(c) => this.input = c} onChange={this.onChangeHandler}/>
+                                   ref={(c) => this.input = c} onChange={this.onChangeHandler} />
                             <small>Search from over {this.props.availableQAs} Q&amp;A resources</small>
                         </div>
                         <div className='col-md-2 col-xs-3 search-btn'>

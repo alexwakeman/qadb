@@ -39,7 +39,7 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
                             <small>Related: </small>
                         </div>
                     </div>
-                    <div className="col-sm-12">
+                    <div className="col-sm-12 related">
                         {this.state.synonyms.map((synonym: any, i: number) => {
                             return (
                                 <div className="col-sm-2" key={i}>
@@ -49,14 +49,22 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
                         })}
                     </div>
                 </div>
-                <div className="row text-center">
-                    <h5>Search Results</h5>
+                <div className="row">
                     <div className="row">
-                        <div className="col-sm-12">
+                        <div className="col-sm-12 results">
                             {this.state.searchResults.map((searchResult: any, i: number) => {
+                                {
+                                    var needsSlice = searchResult.answer.length > 200;
+                                    var answer = needsSlice ? searchResult.answer.slice(0, 200) + '...' : searchResult.answer
+                                }
                                 return (
-                                    <div className="row" key={i}>
-                                        <a href="javascript:void(0)" onClick={() => this.props.router.setPath('qa', searchResult._id)}>{searchResult.question}</a>&nbsp;
+                                    <div className="row result" key={i}>
+                                        <a className="link" href="javascript:void(0)" onClick={() => this.props.router.setPath('qa', searchResult._id)}>{searchResult.question}</a>&nbsp;
+                                        <div className="answer-preview">
+                                            <span className="answer">
+                                                {answer}
+                                            </span>
+                                        </div>
                                     </div>
                                 )
                             })}

@@ -28,7 +28,7 @@ module.exports = function (modLib) {
 			if (!inputString) return Promise.resolve(resultObj);
 
 			input = inputString.split(' ');
-			input.forEach((word) => wordIndexLookups.push(db.asyncFindOneByObject('word_index_copy', {word: word})));
+			input.forEach((word) => wordIndexLookups.push(db.asyncFindOneByObject('word_index_new', {word: word})));
 
 			return Promise
 				.all(wordIndexLookups)
@@ -52,8 +52,13 @@ module.exports = function (modLib) {
 						});
 					});
 					if (synonyms.length) {
+						var noDupeSynonyms = [];
 						synonyms.sort(sortByCount);
-						resultObj.data.synonyms = synonyms;
+						synonyms.forEach((entry) => noDupeSynonyms.containsWordObj(entry) ? null : noDupeSynonyms.push(entry));
+						if (noDupeSynonyms.length > 12) {
+							noDupeSynonyms = noDupeSynonyms.slice(0, 12);
+						}
+						resultObj.data.synonyms = noDupeSynonyms;
 					}
 					/*
 						** Important! **
@@ -86,7 +91,6 @@ module.exports = function (modLib) {
 	};
 
 	/**
-	 * A factory function that limits the content refs for each word lookup if that word is from the synonyms list.
 	 *
 	 * Pure unions across each actual searched word are processed first. Then each of their synonym entries union.
 	 *

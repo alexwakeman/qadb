@@ -1,71 +1,83 @@
+/*
+	See helpers.js for the Array.prototype augmentations used here
+ */
+
 module.exports = function (modLib) {
-	var db = modLib.db;
-	var boundedStops = ["\\b\\d+\\b", "\\ba\\b", "\\bable\\b", "\\babout\\b", "\\bacross\\b", "\\bafter\\b", "\\ball\\b", "\\balmost\\b", "\\balso\\b", "\\bam\\b", "\\bamong\\b", "\\ban\\b", "\\band\\b", "\\bany\\b", "\\bare\\b", "\\bas\\b", "\\bat\\b", "\\bbe\\b", "\\bbecause\\b", "\\bbeen\\b", "\\bbut\\b", "\\bby\\b", "\\bcan\\b", "\\bcannot\\b", "\\bcould\\b", "\\bdear\\b", "\\bdid\\b", "\\bdo\\b", "\\bdoes\\b", "\\beither\\b", "\\belse\\b", "\\bever\\b", "\\bevery\\b", "\\bfor\\b", "\\bfrom\\b", "\\bget\\b", "\\bgot\\b", "\\bhad\\b", "\\bhas\\b", "\\bhave\\b", "\\bhe\\b", "\\bher\\b", "\\bhers\\b", "\\bhim\\b", "\\bhis\\b", "\\bhow\\b", "\\bhowever\\b", "\\bi\\b", "\\bif\\b", "\\bin\\b", "\\binto\\b", "\\bis\\b", "\\bit\\b", "\\bits\\b", "\\bjust\\b", "\\bleast\\b", "\\blet\\b", "\\blike\\b", "\\blikely\\b", "\\bmay\\b", "\\bme\\b", "\\bmight\\b", "\\bmost\\b", "\\bmust\\b", "\\bmy\\b", "\\bneither\\b", "\\bno\\b", "\\bnor\\b", "\\bnot\\b", "\\bof\\b", "\\boff\\b", "\\boften\\b", "\\bon\\b", "\\bonly\\b", "\\bor\\b", "\\bother\\b", "\\bour\\b", "\\bown\\b", "\\brather\\b", "\\bsaid\\b", "\\bsay\\b", "\\bsays\\b", "\\bshe\\b", "\\bshould\\b", "\\bsince\\b", "\\bso\\b", "\\bsome\\b", "\\bthan\\b", "\\bthat\\b", "\\bthe\\b", "\\btheir\\b", "\\bthem\\b", "\\bthen\\b", "\\bthere\\b", "\\bthese\\b", "\\bthey\\b", "\\bthis\\b", "\\btis\\b", "\\bto\\b", "\\btoo\\b", "\\btwas\\b", "\\bus\\b", "\\bwants\\b", "\\bwas\\b", "\\bwe\\b", "\\bwere\\b", "\\bwhat\\b", "\\bwhen\\b", "\\bwhere\\b", "\\bwhich\\b", "\\bwhile\\b", "\\bwho\\b", "\\bwhom\\b", "\\bwhy\\b", "\\bwill\\b", "\\bwith\\b", "\\bwould\\b", "\\byet\\b", "\\byou\\b", "\\byour\\b"];
-	var boundedStopsRegex = new RegExp(boundedStops.join('|'), 'g');
-	var wordsOnlyRegex = new RegExp('[^\\w\\s\\d]+', 'g'); // find all non-words, non-digits and non-whitespace
-	const synonymSearchThreshold = 4; // if less than synonymSearchThreshold results from direct matches from input, use synonym lookup
-	const maxSynonymLookupResults = 50; // limit of synonym word referenced content
+	var db = modLib.db,
+		stops = ['\\w{1}', '\\d+', 'having', 'whose', 'whomever', 'whoever', 'whichever', 'whatever', 'those', 'themselves', 'theirs', 'something', 'someone', 'somebody', 'several', 'ourselves', 'ours', 'nothing', 'nobody', 'none', 'one', 'myself', 'much', 'more', 'mine', 'many', 'itself', 'himself', 'herself', 'few', 'everything', 'everyone', 'everybody', 'each', 'both', 'anybody', 'another',  'anyone', 'anything',  'a', 'able', 'about', 'across', 'after', 'all', 'almost', 'also', 'am', 'among', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'because', 'been', 'but', 'by', 'can', 'cannot', 'could', 'dear', 'did', 'do', 'does', 'either', 'else', 'ever', 'every', 'for', 'from', 'get', 'got', 'had', 'has', 'have', 'he', 'her', 'hers', 'him', 'his', 'how', 'however', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'least', 'let', 'like', 'likely', 'may', 'me', 'might', 'most', 'must', 'my', 'neither', 'no', 'nor', 'not', 'of', 'off', 'often', 'on', 'only', 'or', 'other', 'others', 'our', 'own', 'rather', 'said', 'say', 'says', 'she', 'should', 'since', 'so', 'some', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'tis', 'to', 'too', 'twas', 'us', 'wants', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'while', 'who', 'whom', 'why', 'will', 'with', 'would', 'yet', 'you', 'your', 'yours', 'yourself', 'yourselves'],
+		verbs = ['be', 'were', 'been', 'have', 'had', 'do', 'did', 'done', 'say', 'said', 'go', 'went', 'gone', 'get', 'got', 'make', 'made', 'know', 'knew', 'known', 'think', 'thought', 'take', 'took', 'taken', 'see', 'saw', 'seen', 'came', 'come', 'want', 'wanted', 'use', 'used', 'find', 'found', 'give', 'gave', 'given', 'tell', 'told', 'work', 'worked', 'call', 'called', 'try', 'tried', 'ask', 'asked', 'need', 'needed', 'feel', 'felt', 'became', 'become', 'leave', 'put', 'mean', 'meant', 'keep', 'kept', 'let', 'begin', 'began', 'begun', 'seem', 'seemed', 'help', 'helped', 'show', 'showed', 'shown', 'hear', 'heard', 'play', 'played', 'ran', 'run', 'move', 'moved', 'live', 'lived', 'believe', 'believed', 'bring', 'brought', 'happen', 'happened', 'write', 'wrote', 'written', 'sit', 'sat', 'stand', 'stood', 'lose', 'lost', 'pay', 'paid', 'meet', 'met', 'include', 'included', 'continue', 'continued', 'set', 'learn', 'learnt', 'learned', 'change', 'changed', 'lead', 'led', 'understand', 'understood', 'watch', 'watched', 'follow', 'followed', 'stop', 'stopped', 'create', 'created', 'speak', 'spoke', 'spoken', 'read', 'spend', 'spent', 'grow', 'grew', 'grown', 'open', 'opened', 'walk', 'walked', 'win', 'won', 'teach', 'taught', 'offer', 'offered', 'remember', 'remembered', 'consider', 'considered', 'appear', 'appeared', 'buy', 'bought', 'serve', 'served', 'die', 'died', 'send', 'sent', 'build', 'built', 'stay', 'stayed', 'fall', 'fell', 'fallen', 'cut', 'reach', 'reached', 'kill', 'killed', 'raise', 'raised', 'pass', 'passed', 'sell', 'sold', 'decide', 'decided', 'return', 'returned', 'explain', 'explained', 'hope', 'hoped', 'develop', 'developed', 'carry', 'carried', 'break', 'broke', 'broken', 'receive', 'received', 'agree', 'agreed', 'support', 'supported', 'hit', 'produce', 'produced', 'eat', 'ate', 'eaten', 'cover', 'covered', 'catch', 'caught', 'draw', 'drew', 'drawn', 'choose', 'chose', 'chosen'],
+		fullStops = stops.concat(verbs),
+		boundedStopsRegex = new RegExp('\\b' + fullStops.join('\\b|\\b') + '\\b', 'g'),
+		wordsOnlyRegex = new RegExp('[^\\w\\s]+', 'g'),
+		multiSpace = new RegExp('\\s{2,}', 'g');
+	const synonymSearchThreshold = 8; // if less than synonymSearchThreshold results from direct matches from input, use synonym lookup
+	const maxSynonymLookupResults = 10; // limit of synonym word referenced content
+	const maxSynonymResults = 12;
+	const wordIndexCollection = 'word_index_new'; // the name of the Mongo collection used for word index look-up
+
 	return {
 		performSearch: function (inputString) {
-			var input,
+			var searchTerms,
 				resultObj = {
 					data: {
 						qaResults: [],
 						synonyms: []
 					}
-				};
-			var wordIndexLookups = [];
-			var synonymWordIndexLookups = [];
-			var synonyms = [];
-			var inputWordIndexMatches = [];
+				},
+				wordIndexLookups = [],
+				synonymWordIndexLookups = [],
+				synonyms = [],
+				inputWordIndexMatches = [];
 
 			if (!inputString || typeof inputString !== 'string') return Promise.resolve(resultObj);
 
 			inputString = inputString.toLowerCase();
 			inputString = inputString.replace(boundedStopsRegex, ''); // remove unnecessary words (stop words)
 			inputString = inputString.replace(wordsOnlyRegex, ''); // remove all non-alpha chars
+			inputString = inputString.replace(multiSpace, ' '); // replace multi-spaces with one space
 
 			if (!inputString) return Promise.resolve(resultObj);
 
-			input = inputString.split(' ');
-			input.forEach((word) => wordIndexLookups.push(db.asyncFindOneByObject('word_index_new', {word: word})));
+			searchTerms = inputString.split(' ');
+			searchTerms.forEach((word) => wordIndexLookups.push(db.asyncFind(wordIndexCollection, {word: word}, 1)));
 
 			return Promise
 				.all(wordIndexLookups)
 				.then((wordIndexDocs) => {
+					if (wordIndexDocs.length === 0) throw new Error('No records found'); // exits Promise chain
 					inputWordIndexMatches = wordIndexDocs.filter((entry) => entry); // ensure each entry is valid (exists)
-					if (inputWordIndexMatches.length === 0) throw new Error('No records found');
 					return inputWordIndexMatches;
 				})
 				.then(extractSortedContentRefs)
 				.then(extractContent)
 				.then((content) => content.forEach((qaEntry) => resultObj.data.qaResults.push(qaEntry)))
 				.then(() => {
+					var synonymKeys;
 					inputWordIndexMatches.forEach((wordIndexDoc) => {
-						if (!wordIndexDoc.synonyms) return false;
-						Object.keys(wordIndexDoc.synonyms).forEach((key) => {
+						synonymKeys = wordIndexDoc.synonyms ? Object.keys(wordIndexDoc.synonyms) : null;
+						if (!synonymKeys || synonymKeys.length === 0) return false;
+						synonymKeys.forEach((synonym) => {
 							var synonymObj;
-							if (!itemInArray(key, input)) { // ensure the entry is not an input word
-								synonymObj = wordIndexDoc.synonyms[key];
+							if (!searchTerms.hasEntry(synonym)) { // ensure the entry is not a searchTerms word
+								synonymObj = wordIndexDoc.synonyms[synonym];
 								synonyms.push(synonymObj);
 							}
 						});
 					});
-					if (synonyms.length) {
+					if (synonyms.length > 0) {
 						var noDupeSynonyms = [];
 						synonyms.sort(sortByCount);
-						synonyms.forEach((entry) => noDupeSynonyms.containsWordObj(entry) ? null : noDupeSynonyms.push(entry));
-						if (noDupeSynonyms.length > 12) {
-							noDupeSynonyms = noDupeSynonyms.slice(0, 12);
+						synonyms.forEach((entry) => noDupeSynonyms.containsWord(entry.word) ? null : noDupeSynonyms.push(entry));
+						if (noDupeSynonyms.length > maxSynonymResults) {
+							noDupeSynonyms = noDupeSynonyms.slice(0, maxSynonymResults);
 						}
 						resultObj.data.synonyms = noDupeSynonyms;
 					}
 					/*
-						** Important! **
-						We only perform synonym word look-ups if results from user's actual input are lacking
+						Only perform synonym word look-ups if results from user's actual input are lacking
 					 */
-					if (resultObj.data.qaResults.length < synonymSearchThreshold && synonyms.length) { // if lacking results, and have synonyms
-						synonyms.forEach((synonym) => synonymWordIndexLookups.push(db.asyncFindOneByObject('word_index_copy', { word: synonym.word } )));
+					if (resultObj.data.qaResults.length < synonymSearchThreshold && synonyms.length > 0) {
+						synonyms.forEach((synonym) => synonymWordIndexLookups.push(db.asyncFind(wordIndexCollection, { word: synonym.word }, 1)));
 						return Promise.all(synonymWordIndexLookups);
 					}
 				})
@@ -73,7 +85,7 @@ module.exports = function (modLib) {
 				.then(extractSortedContentRefs)
 				.then(extractContent)
 				.then((content) => {
-					content.forEach((qaEntry) => resultObj.data.qaResults.push(qaEntry));
+					content.forEach((qaEntry, index) => index <= maxSynonymLookupResults ? resultObj.data.qaResults.push(qaEntry) : null);
 					return resultObj;
 				});
 		},
@@ -81,7 +93,7 @@ module.exports = function (modLib) {
 		suggest: function (input) {
 			if (!input) return Promise.resolve({data: []});
 			input = input.replace(wordsOnlyRegex, '');
-			return Promise.resolve(db.asyncFindAllByObject('content', { 'question': { $regex: '^' + input + '.*', $options: 'i' } }, 5))
+			return Promise.resolve(db.asyncFind('content', { 'question': { $regex: '^' + input + '.*', $options: 'i' } }, 5))
 				.then((results) => {
 					return {
 						data: results
@@ -92,44 +104,39 @@ module.exports = function (modLib) {
 
 	/**
 	 *
-	 * Pure unions across each actual searched word are processed first. Then each of their synonym entries union.
+	 * Compiles one array of content IDs that exist across multiple word_index documents,
+	 * and one list of content IDs that exist in only one word_index document.
 	 *
-	 * Unions (cross referenced content_refs) are marked as non-distinct, i.e. the entry appears more than once while cross-referencing.
-	 *
-	 * Distinction must be drawn between synonym cross-referencing and synonym look-ups. If the results from the user's input are low
-	 * then synonym words are looked up independently of the user's input words. This tends to add a large bulk of results so, should be
-	 * limited.
+	 * Content IDs existing across word_index documents are unions of that ID, and are therefore higher priority
+	 * than single matches.
 	 *
 	 */
 	function extractSortedContentRefs(wordIndexDocs) {
-		var distinctEntries = [],
-			nonDistinctEntries = [],
-			filteredDistinct;
+		var singleEntries = [],
+			multipleEntries = [],
+			filteredSingleEntries;
+
 		if (!wordIndexDocs || wordIndexDocs.length === 0) {
 			return [];
 		}
 		wordIndexDocs.sort(sortByCount);
 		wordIndexDocs.forEach((wordIndexDoc) => {
-			var len = wordIndexDoc.content_refs.length,
-				cycles = Math.min(len, maxSynonymLookupResults);
-			for (var i = 0; i < cycles; i++) {
+			var len = wordIndexDoc.content_refs.length;
+			for (var i = 0; i < len; i++) {
 				var contentRef = wordIndexDoc.content_refs[i],
-					idString = contentRef.toString();
-				itemInArray(idString, distinctEntries) ? itemInArray(idString, nonDistinctEntries) ?
-					distinctEntries.push(idString) : nonDistinctEntries.push(idString) : distinctEntries.push(idString);
+					id = contentRef.toString();
+				singleEntries.hasEntry(id) ? multipleEntries.hasEntry(id) ?
+					singleEntries.push(id) : multipleEntries.push(id) : singleEntries.push(id);
 			}
 		});
 
-		filteredDistinct = distinctEntries.filter((entry) => {
-			return ! itemInArray(entry, nonDistinctEntries); // remove duplicates
+		filteredSingleEntries = singleEntries.filter((entry) => {
+			return ! multipleEntries.hasEntry(entry); // remove duplicates
 		});
 
-		nonDistinctEntries = nonDistinctEntries.concat(filteredDistinct);
-		return { results: nonDistinctEntries };
-	}
-
-	function itemInArray(item, array) {
-		return array.indexOf(item) > -1; // cast to boolean
+		// just attach the singly matched entries on to the end of the results
+		multipleEntries = multipleEntries.concat(filteredSingleEntries);
+		return { results: multipleEntries };
 	}
 
 	function extractContent(sortedContentRefs) {
@@ -138,7 +145,7 @@ module.exports = function (modLib) {
 			return contentLookups;
 		}
 		sortedContentRefs.results.forEach((matchRef) => {
-			contentLookups.push(db.asyncFindOneByObject('content', {_id: matchRef}))
+			contentLookups.push(db.asyncFind('content', {_id: matchRef}, 1))
 		});
 		return Promise.all(contentLookups);
 	}

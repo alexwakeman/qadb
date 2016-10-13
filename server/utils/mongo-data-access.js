@@ -12,15 +12,11 @@ var MongoDataAccess = module.exports = function () {};
 
 MongoDataAccess.prototype = (function () {
 	'use strict';
-	var _db, // maintain persistent reference to Mongo
-		_mongo = require('mongodb'),
-		_mongoClient = _mongo.MongoClient,
-		_ObjectID = _mongo.ObjectID,
-		_q = require('q'),
-		_callback = function (error, doc) { // re-usable fake callback function used when one is not necessary from the callee (e.g. deletions)
-			if (error) console.error(error);
-			return doc;
-		};
+	var db, // maintain persistent reference to Mongo
+		mongo = require('mongodb'),
+		mongoClient = mongo.MongoClient,
+		ObjectID = mongo.ObjectID,
+		q = require('q');
 
 	return {
 		/**
@@ -35,15 +31,125 @@ MongoDataAccess.prototype = (function () {
 
 			if (!host) throw new Error('Host is required!');
 
-			_mongoClient.connect(host, function (err, db) {
-				if (err) throw err;
-				_db = db;
-
+			mongoClient.connect(host, function (error, _db) {
+				if (error) throw error;
+				db = _db;
 				if (user && pass) {
-					_db.authenticate(user, pass, function (err) {
+					db.authenticate(user, pass, function (err) {
 						if (err) console.log('Unable to authenticate MongoDB!');
 					});
 				}
+			});
+		},
+		
+		/**
+		 *
+		 * @param collectionName {String} name of the Mongo collection
+		 * @param doc {Object} the document to store in the collection
+		 */
+		addEntry: function (collectionName, doc) {
+			return new Promise((resolve, reject) => {
+				db.collection(collectionName, function (error, collection) {
+					if (error) return handleErrorResolve(reject, error);
+					collection.insert(doc, {w: 1}, function (error, doc) {
+						return handleErrorResolve(reject, error, resolve, doc);
+					});
+				});
+			});
+		},
+
+		/**
+		 *
+		 * @param collectionName {String} name of the Mongo collection
+		 * @returns {Promise} resolves with all records in given collection
+		 */
+		findAll: function (collectionName) {
+			return new Promise((resolve, reject) => {
+				db.collection(collectionName, function (error, collection) {
+					if (error) return handleErrorResolve(reject, error);
+					collection.find().toArray(function (error, doc) {
+						handleErrorResolve(reject, error, resolve, doc);
+					});
+				});
+			});
+		},
+
+		/**
+		 *
+		 * @param collectionName {String} name of the Mongo collection
+		 * @param query {Object} a MongoClient query object
+		 * @param limit {Number} max number of results
+		 * @returns {Promise}
+		 */
+		find: function (collectionName, query, limit) {
+			if (query.hasOwnProperty('_id') && typeof query._id === 'string') {
+				query._id = new ObjectID(query._id);
+			}
+			return new Promise((resolve, reject) => {
+				db.collection(collectionName, function (error, collection) {
+					if (error) {
+						console.error(error);
+						reject(error);
+						return;
+					}
+					if (limit && typeof limit === 'number' && limit > 0) {
+						collection.find(query).limit(parseInt(limit)).toArray(function (error, data) {
+							if (error) return handleErrorResolve(reject, error);
+							data.length === 1 ? resolve(data[0]) : resolve(data);
+						});
+					}
+					else {
+						collection.find(query).toArray(function (error, data) {
+							if (error) return handleErrorResolve(reject, error);
+							data.length === 1 ? resolve(data[0]) : resolve(data);
+						});
+					}
+				});
+			});
+		},
+
+		/**
+		 *
+		 * @param collectionName {String} name of the Mongo collection
+		 * @param id {String} Mongo id string (hexadecimal)
+		 * @param doc {Object} the document to store in the collection
+		 * @returns {Promise} the id of the updated document for convenience
+		 */
+		updateEntry: function (collectionName, id, doc) {
+			return new Promise((resolve, reject) => {
+				if (typeof id !== 'string') return handleErrorResolve(reject, new Error('ID param must be of type `string`.'));
+				if (!collectionName || !id || !doc) {
+					return handleErrorResolve(reject, new Error('All params are required.'));
+				}
+				var oId = new ObjectID(id);
+				delete doc._id;
+				db.collection(collectionName, function (error, collection) {
+					if (error) return handleErrorResolve(reject, error);
+					collection.update(
+						{ _id: oId },
+						{ $set: doc },
+						function (error) {
+							return handleErrorResolve(reject, error, resolve, id);
+						}
+					);
+				});
+			});
+		},
+
+		/**
+		 * @param collectionName {String} name of the Mongo collection
+		 * @param id {String} Mongo id string (hexadecimal)
+		 */
+		removeEntry: function (collectionName, id) {
+			return new Promise((resolve, reject) => {
+				if (typeof id !== 'string') return handleErrorResolve(reject, new Error('`id` must be a hexadecimal BSON ObjectID `string`.'));
+				var oId = new ObjectID(id); // generate a binary of id
+				db.collection(collectionName, function (error, collection) {
+					handleErrorResolve(reject, error);
+					collection.remove({ _id: oId }, {justOne: true}, function (error) {
+						handleErrorResolve(reject, error, resolve, id);
+					})
+				});
 			});
 		},
 
@@ -51,281 +157,22 @@ MongoDataAccess.prototype = (function () {
 		 * Close the Mongo connection
 		 */
 		disconnect: function () {
-			_db.close();
-		},
+			db.close();
+		}
+	};
 
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param doc {Object} the document to store in the collection
-		 * @param callback {Function} passes the success object from Mongo to the callee
-		 */
-		addEntry: function (collectionName, doc, callback) {
-			if (!callback) callback = _callback;
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					callback(error);
-					return;
-				}
-				collection.insert(doc, {w: 1}, function (error, doc) {
-					if (error) console.error(error);
-					callback(error, doc);
-				});
-			});
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param callback {Function} passes the success object from Mongo to the callee
-		 */
-		findAll: function (collectionName, callback) {
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					callback(error);
-					return;
-				}
-				collection.find().toArray(function (error, doc) {
-					if (error) console.error(error);
-					callback(error, doc);
-				});
-			});
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @returns {*|promise} q promise object to await async process returning
-		 */
-		asyncFindAll: function (collectionName) {
-			var deferred = _q.defer();
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					deferred.reject(error);
-					return;
-				}
-				collection.find().toArray(function (error, doc) {
-					if (error) {
-						console.error(error);
-						deferred.reject(error);
-					} else {
-						deferred.resolve(doc);
-					}
-				});
-			});
-			return deferred.promise;
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param id {String} Mongo id string (hexadecimal)
-		 * @param callback {Function} passes the success object from Mongo to the callee
-		 */
-		findById: function (collectionName, id, callback) { // callback(err, item)
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					callback(error);
-					return;
-				}
-				var oId = new _ObjectID(id); // generate a binary of id
-				collection.find({ _id: oId }).limit(1).next(function (error, doc) {
-					if (error) console.error(error);
-					callback(error, doc);
-				});
-			});
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param id {String} Mongo id string (hexadecimal)
-		 * @returns {*|promise} q promise object to await async process returning
-		 */
-		asyncFindById: function (collectionName, id) {
-			var deferred = _q.defer();
-			var oId = new _ObjectID(id); // generate a binary of id
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					deferred.reject(error);
-					return;
-				}
-				collection.find({ _id: oId }).limit(1).next(function (error, doc) {
-					if (error) {
-						console.error(error);
-						deferred.reject(error);
-					} else {
-						deferred.resolve(doc);
-					}
-				});
-			});
-			return deferred.promise;
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param whereObj {Object} a MongoClient query object
-		 * @param limit {Number} max number of results
-		 * @returns {*|promise} promise object
-		 */
-		asyncFindAllByObject: function (collectionName, whereObj, limit) {
-			// create promise object to return to caller
-			if (whereObj.hasOwnProperty('_id')) {
-				whereObj._id = new _ObjectID(whereObj._id);
-			}
-			return new Promise((resolve, reject) => {
-				_db.collection(collectionName, function (error, collection) {
-					if (error) {
-						console.error(error);
-						reject(error);
-						return;
-					}
-					collection.find(whereObj).limit(limit || 10).toArray(function (err, data) {
-						// finish promise process, always resolve because of chaining etc.
-						resolve(data);
-					});
-				});
-			});
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param whereObj {Object} a MongoClient query object
-		 * @returns {*|promise} q promise object to await async process returning
-		 */
-		asyncFindOneByObject: function (collectionName, whereObj) {
-			if (whereObj.hasOwnProperty('_id') ) {
-				whereObj._id = new _ObjectID(whereObj._id);
-			}
-			return new Promise((resolve, reject) => {
-				_db.collection(collectionName, function (error, collection) {
-					if (error) {
-						console.error(error);
-						reject(error);
-						return;
-					}
-					collection.find(whereObj).limit(1).next(function (error, doc) {
-						// always resolve,
-						// because lookup may fail but only partially in a set of look-ups, and don't want entire
-						// procedure to blow up. Validity of doc can be checked in consumer. Especially important in chaining Promises,
-						// or using Promise.all for DB look-ups
-						resolve(doc);
-					});
-				});
-			});
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param whereObj {Object} a MongoClient query object
-		 * @param callback {Function} passes the success object from Mongo to the callee
-		 */
-		findOneByObject: function (collectionName, whereObj, callback) { // callback(err, item)
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					callback(error);
-					return;
-				}
-				collection.find(whereObj).limit(1).next(function (error, doc) {
-					if (error) console.error(error);
-					callback(error, doc);
-				});
-			});
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param whereObj {Object} a MongoClient query object
-		 * @param callback {Function} passes the success object from Mongo to the callee
-		 */
-		findAllByObject: function (collectionName, whereObj, callback) { // callback(err, item)
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					callback(error);
-					return;
-				}
-				collection.find(whereObj).toArray(function (error, doc) {
-					if (error) console.error(error);
-					callback(error, doc);
-				});
-			});
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param id {String} Mongo id string (hexadecimal)
-		 * @param doc {Object} the document to store in the collection
-		 * @param callback {Function} passes the success object from Mongo to the callee
-		 * @returns {String} the id of the updated document for convenience
-		 */
-		updateEntry: function (collectionName, id, doc, callback) {
-			if (!collectionName || !id || !doc) {
-				console.error('missing parameter(s)');
-				return null;
-			}
-			var oId = new _ObjectID(id); // generate a binary of id
-			delete doc._id;
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					callback(error);
-					return;
-				}
-				collection.update(
-					{ _id: oId },
-					{ $set: doc },
-					function (error, doc) {
-						if (error) console.error(error);
-						callback(error, doc);
-					}
-				);
-			});
-			// return the ID here so it can be re-used in async operations
-			return id;
-		},
-
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param id {String} Mongo id string (hexadecimal)
-		 * @param callback {Function} passes the success object from Mongo to the callee
-		 */
-		removeEntry: function (collectionName, id, callback) {
-			var oId = new _ObjectID(id); // generate a binary of id
-			_db.collection(collectionName, function (error, collection) {
-				if (error) {
-					console.error(error);
-					callback(error);
-					return;
-				}
-				collection.remove({ _id: oId }, {justOne: true}, function (error, doc) {
-					if (error) console.error(error);
-					callback(error, doc);
-				})
-			});
-		},
-
-		/**
-		 *
-		 * @returns {Function|*} enforce singleton pattern
-		 */
-		getInstance: function () {
-			if (typeof MongoDataAccess.prototype.instance === 'undefined') {
-				MongoDataAccess.prototype.instance = new MongoDataAccess();
-			}
-			return MongoDataAccess.prototype.instance;
+	/**
+	 * @param reject {Function} - a Promise instance's reject method
+	 * @param error {MongoError|Error} - an Error type instance
+	 * @param resolve? {Function} - a Promise instance's resolve method (optional)
+	 * @param doc? - document to return to Promise .then() callback
+	 */
+	function handleErrorResolve(reject, error, resolve, doc) {
+		if (error) {
+			if (console && console.error) console.error(error);
+			reject(error);
+		} else if (resolve) {
+			resolve(doc || true);
 		}
 	}
 })();

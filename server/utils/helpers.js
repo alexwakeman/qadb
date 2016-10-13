@@ -6,12 +6,15 @@
 			}
 			return false;
 		};
-	Array.prototype.containsWordObj = Array.prototype.containsWordObj || function (obj) {
+	Array.prototype.containsWord = Array.prototype.containsWordObj || function (word) {
 			var i, l = this.length;
 			for (i = 0; i < l; i++) {
-				if (this[i].word === obj.word) return true;
+				if (this[i].word === word) return true;
 			}
 			return false;
+		};
+	Array.prototype.hasEntry = Array.prototype.hasEntry || function (item) {
+			return this.indexOf(item) !== -1;
 		};
 })();
 module.exports = {};

@@ -15,7 +15,7 @@ process.argv.forEach((arg) => arg == 'production' ? (IS_PRODUCTION = true) : (IS
  */
 
 var MongoDataAccess = require('./utils/mongo-data-access');
-var modLib = {}; // an object containing re-usable cross-app components, avoids using globals
+var modLib = {}; // Module Library - an object containing re-usable cross-app components, avoids using globals
 modLib.express = require('express');
 modLib.app = modLib.express();
 modLib.authChecker = require('./utils/auth-utils').auth(ENABLE_AUTH);
@@ -41,7 +41,7 @@ var apiLimiter = new RateLimit({
 	max: 100,
 	delayMs: 0 // disabled
 });
-// only apply to requests that begin with /api/
+// apply security modules: rate limiter and HTTP clean-up
 modLib.app.use(['/login', '/api'], apiLimiter);
 modLib.app.use(helmet());
 

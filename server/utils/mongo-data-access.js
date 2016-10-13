@@ -1,42 +1,46 @@
 /*
- 	Requires npm packages `mongodb` & `q` to be installed
+ 	Requires npm packages `mongodb` to be installed
 
  	Copyright (C) 2016 Alex Wakeman
 
  	mongo-data-access is a CRUD boilerplate API for MongoDB.
- 	Now you need a lot less boilerplate code for reading and updating Mongo.
- 	Works asynchronously too, using promises / Q lib.
+ 	Meaning a lot less boilerplate code for reading and updating MongoDB.
+ 	Works asynchronously using native ECMA-6 Promise.
  */
 
-var MongoDataAccess = module.exports = function () {};
+var MongoDataAccess = module.exports = function() {};
 
-MongoDataAccess.prototype = (function () {
+MongoDataAccess.prototype = (() => {
 	'use strict';
 	var db, // maintain persistent reference to Mongo
 		mongo = require('mongodb'),
 		mongoClient = mongo.MongoClient,
-		ObjectID = mongo.ObjectID,
-		q = require('q');
+		ObjectID = mongo.ObjectID;
 
 	return {
 		/**
-		 * @param settings {Object} specifies the parameters for the Mongo connection { host: 'http://localhost:27017' [, user: 'admin', password: 'admin' ] }
+		 *
+		 * @param settings {Object} specifies the parameters for the Mongo connection { host: 'mongodb://127.0.0.1:27017/dbName' [, user: 'admin', password: 'admin' ] }
 		 */
-		connect: function (settings) {
-			if (!settings || typeof settings !== 'object') throw new Error('`settings` argument must be an object like { host: \'http://localhost:27017\' }');
+		connect: (settings) => {
+			if (!settings || typeof settings !== 'object') {
+				throw new Error('`settings` argument must be an object like { host: \'mongodb://127.0.0.1:27017/dbName\' }');
+			}
+
+			if (!settings.host) {
+				throw new Error('Host address for MongoDB is required.');
+			}
 
 			var host = settings.host,
 				user = settings.user,
 				pass = settings.password;
 
-			if (!host) throw new Error('Host is required!');
-
-			mongoClient.connect(host, function (error, _db) {
+			mongoClient.connect(host, (error, _db) => {
 				if (error) throw error;
 				db = _db;
 				if (user && pass) {
-					db.authenticate(user, pass, function (err) {
-						if (err) console.log('Unable to authenticate MongoDB!');
+					db.authenticate(user, pass, (error) => {
+						if (error) throw error;
 					});
 				}
 			});
@@ -47,13 +51,13 @@ MongoDataAccess.prototype = (function () {
 		 * @param collectionName {String} name of the Mongo collection
 		 * @param doc {Object} the document to store in the collection
 		 */
-		addEntry: function (collectionName, doc) {
+		addEntry: (collectionName, doc) => {
 			return new Promise((resolve, reject) => {
-				db.collection(collectionName, function (error, collection) {
-					if (error) return handleErrorResolve(reject, error);
-					collection.insert(doc, {w: 1}, function (error, doc) {
-						return handleErrorResolve(reject, error, resolve, doc);
-					});
+				db.collection(collectionName, (error, collection) => {
+					if (error) {
+						return handleErrorResolve(reject, error);
+					}
+					collection.insert(doc, {w: 1}, (error, doc) => handleErrorResolve(reject, error, resolve, doc));
 				});
 			});
 		},
@@ -63,13 +67,11 @@ MongoDataAccess.prototype = (function () {
 		 * @param collectionName {String} name of the Mongo collection
 		 * @returns {Promise} resolves with all records in given collection
 		 */
-		findAll: function (collectionName) {
+		findAll: (collectionName) => {
 			return new Promise((resolve, reject) => {
-				db.collection(collectionName, function (error, collection) {
+				db.collection(collectionName, (error, collection) => {
 					if (error) return handleErrorResolve(reject, error);
-					collection.find().toArray(function (error, doc) {
-						handleErrorResolve(reject, error, resolve, doc);
-					});
+					collection.find().toArray((error, doc) => handleErrorResolve(reject, error, resolve, doc));
 				});
 			});
 		},
@@ -79,30 +81,25 @@ MongoDataAccess.prototype = (function () {
 		 * @param collectionName {String} name of the Mongo collection
 		 * @param query {Object} a MongoClient query object
 		 * @param limit {Number} max number of results
-		 * @returns {Promise}
+		 * @returns {Promise} results returned. if limit of `1` is passed, results array is discarded in favour of first result within it.
 		 */
-		find: function (collectionName, query, limit) {
+		find: (collectionName, query, limit) => {
 			if (query.hasOwnProperty('_id') && typeof query._id === 'string') {
 				query._id = new ObjectID(query._id);
 			}
 			return new Promise((resolve, reject) => {
-				db.collection(collectionName, function (error, collection) {
+				db.collection(collectionName, (error, collection) => {
 					if (error) {
-						console.error(error);
-						reject(error);
-						return;
+						return handleErrorResolve(reject, error);
 					}
 					if (limit && typeof limit === 'number' && limit > 0) {
-						collection.find(query).limit(parseInt(limit)).toArray(function (error, data) {
+						collection.find(query).limit(parseInt(limit)).toArray((error, data) => {
 							if (error) return handleErrorResolve(reject, error);
-							data.length === 1 ? resolve(data[0]) : resolve(data);
+							limit === 1 && data.length > 0 ? resolve(data[0]) : resolve(data);
 						});
 					}
 					else {
-						collection.find(query).toArray(function (error, data) {
-							if (error) return handleErrorResolve(reject, error);
-							data.length === 1 ? resolve(data[0]) : resolve(data);
-						});
+						collection.find(query).toArray((error, data) => handleErrorResolve(reject, error, resolve, data));
 					}
 				});
 			});
@@ -115,7 +112,7 @@ MongoDataAccess.prototype = (function () {
 		 * @param doc {Object} the document to store in the collection
 		 * @returns {Promise} the id of the updated document for convenience
 		 */
-		updateEntry: function (collectionName, id, doc) {
+		updateEntry: (collectionName, id, doc) => {
 			return new Promise((resolve, reject) => {
 				if (typeof id !== 'string') return handleErrorResolve(reject, new Error('ID param must be of type `string`.'));
 				if (!collectionName || !id || !doc) {
@@ -123,32 +120,31 @@ MongoDataAccess.prototype = (function () {
 				}
 				var oId = new ObjectID(id);
 				delete doc._id;
-				db.collection(collectionName, function (error, collection) {
-					if (error) return handleErrorResolve(reject, error);
+				db.collection(collectionName, (error, collection) => {
+					if (error) {
+						return handleErrorResolve(reject, error);
+					}
 					collection.update(
 						{ _id: oId },
 						{ $set: doc },
-						function (error) {
-							return handleErrorResolve(reject, error, resolve, id);
-						}
+						(error) => handleErrorResolve(reject, error, resolve, id)
 					);
 				});
 			});
 		},
 
 		/**
+		 *
 		 * @param collectionName {String} name of the Mongo collection
 		 * @param id {String} Mongo id string (hexadecimal)
 		 */
-		removeEntry: function (collectionName, id) {
+		removeEntry: (collectionName, id) => {
 			return new Promise((resolve, reject) => {
 				if (typeof id !== 'string') return handleErrorResolve(reject, new Error('`id` must be a hexadecimal BSON ObjectID `string`.'));
 				var oId = new ObjectID(id); // generate a binary of id
-				db.collection(collectionName, function (error, collection) {
+				db.collection(collectionName, (error, collection) => {
 					handleErrorResolve(reject, error);
-					collection.remove({ _id: oId }, {justOne: true}, function (error) {
-						handleErrorResolve(reject, error, resolve, id);
-					})
+					collection.remove({ _id: oId }, {justOne: true}, (error) => handleErrorResolve(reject, error, resolve, id))
 				});
 			});
 		},
@@ -156,16 +152,15 @@ MongoDataAccess.prototype = (function () {
 		/**
 		 * Close the Mongo connection
 		 */
-		disconnect: function () {
-			db.close();
-		}
+		disconnect: () => db.close()
 	};
 
 	/**
+	 *
 	 * @param reject {Function} - a Promise instance's reject method
 	 * @param error {MongoError|Error} - an Error type instance
 	 * @param resolve? {Function} - a Promise instance's resolve method (optional)
-	 * @param doc? - document to return to Promise .then() callback
+	 * @param doc? {Object|String|Boolean} - document to return to Promise .then() callback
 	 */
 	function handleErrorResolve(reject, error, resolve, doc) {
 		if (error) {

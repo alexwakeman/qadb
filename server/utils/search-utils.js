@@ -3,7 +3,9 @@
  */
 
 module.exports = function (modLib) {
+	if (!modLib) throw new Error('Module library is missing.');
 	var db = modLib.db,
+		config = modLib.config,
 		stops = ['\\w{1}', '\\d+', 'having', 'whose', 'whomever', 'whoever', 'whichever', 'whatever', 'those', 'themselves', 'theirs', 'something', 'someone', 'somebody', 'several', 'ourselves', 'ours', 'nothing', 'nobody', 'none', 'one', 'myself', 'much', 'more', 'mine', 'many', 'itself', 'himself', 'herself', 'few', 'everything', 'everyone', 'everybody', 'each', 'both', 'anybody', 'another',  'anyone', 'anything',  'a', 'able', 'about', 'across', 'after', 'all', 'almost', 'also', 'am', 'among', 'an', 'and', 'any', 'are', 'as', 'at', 'be', 'because', 'been', 'but', 'by', 'can', 'cannot', 'could', 'dear', 'did', 'do', 'does', 'either', 'else', 'ever', 'every', 'for', 'from', 'get', 'got', 'had', 'has', 'have', 'he', 'her', 'hers', 'him', 'his', 'how', 'however', 'i', 'if', 'in', 'into', 'is', 'it', 'its', 'just', 'least', 'let', 'like', 'likely', 'may', 'me', 'might', 'most', 'must', 'my', 'neither', 'no', 'nor', 'not', 'of', 'off', 'often', 'on', 'only', 'or', 'other', 'others', 'our', 'own', 'rather', 'said', 'say', 'says', 'she', 'should', 'since', 'so', 'some', 'than', 'that', 'the', 'their', 'them', 'then', 'there', 'these', 'they', 'this', 'tis', 'to', 'too', 'twas', 'us', 'wants', 'was', 'we', 'were', 'what', 'when', 'where', 'which', 'while', 'who', 'whom', 'why', 'will', 'with', 'would', 'yet', 'you', 'your', 'yours', 'yourself', 'yourselves'],
 		verbs = ['be', 'were', 'been', 'have', 'had', 'do', 'did', 'done', 'say', 'said', 'go', 'went', 'gone', 'get', 'got', 'make', 'made', 'know', 'knew', 'known', 'think', 'thought', 'take', 'took', 'taken', 'see', 'saw', 'seen', 'came', 'come', 'want', 'wanted', 'use', 'used', 'find', 'found', 'give', 'gave', 'given', 'tell', 'told', 'work', 'worked', 'call', 'called', 'try', 'tried', 'ask', 'asked', 'need', 'needed', 'feel', 'felt', 'became', 'become', 'leave', 'put', 'mean', 'meant', 'keep', 'kept', 'let', 'begin', 'began', 'begun', 'seem', 'seemed', 'help', 'helped', 'show', 'showed', 'shown', 'hear', 'heard', 'play', 'played', 'ran', 'run', 'move', 'moved', 'live', 'lived', 'believe', 'believed', 'bring', 'brought', 'happen', 'happened', 'write', 'wrote', 'written', 'sit', 'sat', 'stand', 'stood', 'lose', 'lost', 'pay', 'paid', 'meet', 'met', 'include', 'included', 'continue', 'continued', 'set', 'learn', 'learnt', 'learned', 'change', 'changed', 'lead', 'led', 'understand', 'understood', 'watch', 'watched', 'follow', 'followed', 'stop', 'stopped', 'create', 'created', 'speak', 'spoke', 'spoken', 'read', 'spend', 'spent', 'grow', 'grew', 'grown', 'open', 'opened', 'walk', 'walked', 'win', 'won', 'teach', 'taught', 'offer', 'offered', 'remember', 'remembered', 'consider', 'considered', 'appear', 'appeared', 'buy', 'bought', 'serve', 'served', 'die', 'died', 'send', 'sent', 'build', 'built', 'stay', 'stayed', 'fall', 'fell', 'fallen', 'cut', 'reach', 'reached', 'kill', 'killed', 'raise', 'raised', 'pass', 'passed', 'sell', 'sold', 'decide', 'decided', 'return', 'returned', 'explain', 'explained', 'hope', 'hoped', 'develop', 'developed', 'carry', 'carried', 'break', 'broke', 'broken', 'receive', 'received', 'agree', 'agreed', 'support', 'supported', 'hit', 'produce', 'produced', 'eat', 'ate', 'eaten', 'cover', 'covered', 'catch', 'caught', 'draw', 'drew', 'drawn', 'choose', 'chose', 'chosen'],
 		fullStops = stops.concat(verbs),
@@ -13,7 +15,6 @@ module.exports = function (modLib) {
 	const synonymSearchThreshold = 8; // if less than synonymSearchThreshold results from direct matches from input, use synonym lookup
 	const maxSynonymLookupResults = 10; // limit of synonym word referenced content
 	const maxSynonymResults = 12;
-	const wordIndexCollection = 'word_index_new'; // the name of the Mongo collection used for word index look-up
 
 	return {
 		performSearch: function (inputString) {
@@ -39,7 +40,7 @@ module.exports = function (modLib) {
 			if (!inputString) return Promise.resolve(resultObj);
 
 			searchTerms = inputString.split(' ');
-			searchTerms.forEach((word) => wordIndexLookups.push(db.asyncFind(wordIndexCollection, {word: word}, 1)));
+			searchTerms.forEach((word) => wordIndexLookups.push(db.find(config.WORD_INDEX, {word: word}, 1)));
 
 			return Promise
 				.all(wordIndexLookups)
@@ -64,6 +65,7 @@ module.exports = function (modLib) {
 							}
 						});
 					});
+
 					if (synonyms.length > 0) {
 						var noDupeSynonyms = [];
 						synonyms.sort(sortByCount);
@@ -77,7 +79,7 @@ module.exports = function (modLib) {
 						Only perform synonym word look-ups if results from user's actual input are lacking
 					 */
 					if (resultObj.data.qaResults.length < synonymSearchThreshold && synonyms.length > 0) {
-						synonyms.forEach((synonym) => synonymWordIndexLookups.push(db.asyncFind(wordIndexCollection, { word: synonym.word }, 1)));
+						synonyms.forEach((synonym) => synonymWordIndexLookups.push(db.find(config.WORD_INDEX, { word: synonym.word }, 1)));
 						return Promise.all(synonymWordIndexLookups);
 					}
 				})
@@ -93,7 +95,7 @@ module.exports = function (modLib) {
 		suggest: function (input) {
 			if (!input) return Promise.resolve({data: []});
 			input = input.replace(wordsOnlyRegex, '');
-			return Promise.resolve(db.asyncFind('content', { 'question': { $regex: '^' + input + '.*', $options: 'i' } }, 5))
+			return Promise.resolve(db.find(config.CONTENT, { 'question': { $regex: '^' + input + '.*', $options: 'i' } }, 5))
 				.then((results) => {
 					return {
 						data: results
@@ -113,8 +115,7 @@ module.exports = function (modLib) {
 	 */
 	function extractSortedContentRefs(wordIndexDocs) {
 		var singleEntries = [],
-			multipleEntries = [],
-			filteredSingleEntries;
+			multipleEntries = [];
 
 		if (!wordIndexDocs || wordIndexDocs.length === 0) {
 			return [];
@@ -125,17 +126,18 @@ module.exports = function (modLib) {
 			for (var i = 0; i < len; i++) {
 				var contentRef = wordIndexDoc.content_refs[i],
 					id = contentRef.toString();
-				singleEntries.hasEntry(id) ? multipleEntries.hasEntry(id) ?
-					singleEntries.push(id) : multipleEntries.push(id) : singleEntries.push(id);
+				if (singleEntries.hasEntry(id)) {
+					if (!multipleEntries.hasEntry(id)) {
+						multipleEntries.push(id);
+					}
+				} else {
+					singleEntries.push(id);
+				}
 			}
 		});
 
-		filteredSingleEntries = singleEntries.filter((entry) => {
-			return ! multipleEntries.hasEntry(entry); // remove duplicates
-		});
-
-		// just attach the singly matched entries on to the end of the results
-		multipleEntries = multipleEntries.concat(filteredSingleEntries);
+		// just attach the singly matched entries on to the end of the union results
+		multipleEntries = multipleEntries.concat(singleEntries);
 		return { results: multipleEntries };
 	}
 
@@ -145,7 +147,7 @@ module.exports = function (modLib) {
 			return contentLookups;
 		}
 		sortedContentRefs.results.forEach((matchRef) => {
-			contentLookups.push(db.asyncFind('content', {_id: matchRef}, 1))
+			contentLookups.push(db.find(config.CONTENT, { _id: matchRef }, 1))
 		});
 		return Promise.all(contentLookups);
 	}

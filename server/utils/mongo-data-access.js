@@ -45,22 +45,6 @@ MongoDataAccess.prototype = (() => {
 				}
 			});
 		},
-		
-		/**
-		 *
-		 * @param collectionName {String} name of the Mongo collection
-		 * @param doc {Object} the document to store in the collection
-		 */
-		addEntry: (collectionName, doc) => {
-			return new Promise((resolve, reject) => {
-				db.collection(collectionName, (error, collection) => {
-					if (error) {
-						return handleErrorResolve(reject, error);
-					}
-					collection.insert(doc, {w: 1}, (error, doc) => handleErrorResolve(reject, error, resolve, doc));
-				});
-			});
-		},
 
 		/**
 		 *
@@ -108,26 +92,42 @@ MongoDataAccess.prototype = (() => {
 		/**
 		 *
 		 * @param collectionName {String} name of the Mongo collection
-		 * @param id {String} Mongo id string (hexadecimal)
 		 * @param doc {Object} the document to store in the collection
+		 */
+		insert: (collectionName, input) => {
+			return new Promise((resolve, reject) => {
+				db.collection(collectionName, (error, collection) => {
+					if (error) {
+						return handleErrorResolve(reject, error);
+					}
+					collection.insert(input, {w: 1}, (error, doc) => handleErrorResolve(reject, error, resolve, doc));
+				});
+			});
+		},
+
+		/**
+		 *
+		 * @param collectionName {String} name of the Mongo collection
+		 * @param id {String} Mongo id string (hexadecimal)
+		 * @param input {Object} the document to store in the collection
 		 * @returns {Promise} the id of the updated document for convenience
 		 */
-		updateEntry: (collectionName, id, doc) => {
+		update: (collectionName, id, input) => {
 			return new Promise((resolve, reject) => {
 				if (typeof id !== 'string') return handleErrorResolve(reject, new Error('ID param must be of type `string`.'));
-				if (!collectionName || !id || !doc) {
+				if (!collectionName || !id || !input) {
 					return handleErrorResolve(reject, new Error('All params are required.'));
 				}
 				var oId = new ObjectID(id);
-				delete doc._id;
+				delete input._id;
 				db.collection(collectionName, (error, collection) => {
 					if (error) {
 						return handleErrorResolve(reject, error);
 					}
 					collection.update(
 						{ _id: oId },
-						{ $set: doc },
-						(error) => handleErrorResolve(reject, error, resolve, id)
+						{ $set: input },
+						(error) => handleErrorResolve(reject, error, resolve, input)
 					);
 				});
 			});
@@ -138,7 +138,7 @@ MongoDataAccess.prototype = (() => {
 		 * @param collectionName {String} name of the Mongo collection
 		 * @param id {String} Mongo id string (hexadecimal)
 		 */
-		removeEntry: (collectionName, id) => {
+		remove: (collectionName, id) => {
 			return new Promise((resolve, reject) => {
 				if (typeof id !== 'string') return handleErrorResolve(reject, new Error('`id` must be a hexadecimal BSON ObjectID `string`.'));
 				var oId = new ObjectID(id); // generate a binary of id
@@ -152,7 +152,7 @@ MongoDataAccess.prototype = (() => {
 		/**
 		 * Close the Mongo connection
 		 */
-		disconnect: () => db.close()
+		close: () => db.close()
 	};
 
 	/**

@@ -9,15 +9,15 @@ module.exports = function(modLib) {
 					() => res.send('Unable to fetch document.'));
 		})
 		.put(modLib.authChecker, (req, res) => {
-			var id = req.query.input,
-				doc = req.body.doc;
+			var id = req.query.id,
+				doc = req.body;
 			modLib.cmsUtils.mergeUpdate(doc, id)
-				.then((done) => res.send(done), (error) => res.status(500).send(error.message));
+				.then(() => res.send(''), (error) => res.status(500).send(error.message));
 		})
 		.post(modLib.authChecker, (req, res) => {
-			var doc = req.body.doc;
+			var doc = req.body;
 			modLib.cmsUtils.mergeNew(doc)
-				.then((done) => res.send(done), (error) => res.status(500).send(error.message));
+				.then(() => res.send(''), (error) => res.status(500).send(error.message));
 		})
 		.delete(modLib.authChecker, (req, res) => {
 			var id = req.query.input;

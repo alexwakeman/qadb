@@ -78,8 +78,17 @@ MongoDataAccess.prototype = (() => {
 					}
 					if (limit && typeof limit === 'number' && limit > 0) {
 						collection.find(query).limit(parseInt(limit)).toArray((error, data) => {
-							if (error) return handleErrorResolve(reject, error);
-							limit === 1 && data.length > 0 ? resolve(data[0]) : resolve(data);
+							if (error) {
+								return handleErrorResolve(reject, error);
+							}
+
+							if (limit === 1 && data.length === 1) {
+								resolve(data[0]);
+							} else if (data.length > 1) {
+								resolve(data);
+							} else {
+								resolve(null);
+							}
 						});
 					}
 					else {
@@ -92,15 +101,21 @@ MongoDataAccess.prototype = (() => {
 		/**
 		 *
 		 * @param collectionName {String} name of the Mongo collection
-		 * @param doc {Object} the document to store in the collection
+		 * @param input {Object} the document to store in the collection
+		 * @returns {Promise} the input document with _id property set by Mongo after insert
 		 */
-		insert: (collectionName, input) => {
+		insertOne: (collectionName, input) => {
 			return new Promise((resolve, reject) => {
 				db.collection(collectionName, (error, collection) => {
 					if (error) {
 						return handleErrorResolve(reject, error);
 					}
-					collection.insert(input, {w: 1}, (error, doc) => handleErrorResolve(reject, error, resolve, doc));
+					collection.insert(input, {w: 1}, (error, resultObj) => {
+						if (!error && resultObj.result.n === 1) { // only give the input its ID if write op was ok
+							input._id = resultObj.insertedIds[0];
+						}
+						handleErrorResolve(reject, error, resolve, input);
+					});
 				});
 			});
 		},
@@ -127,7 +142,12 @@ MongoDataAccess.prototype = (() => {
 					collection.update(
 						{ _id: oId },
 						{ $set: input },
-						(error) => handleErrorResolve(reject, error, resolve, input)
+						(error) => {
+							if (!error) {
+								input._id = oId;
+							}
+							handleErrorResolve(reject, error, resolve, input)
+						}
 					);
 				});
 			});

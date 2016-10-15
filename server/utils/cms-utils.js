@@ -33,18 +33,16 @@ module.exports = function(modLib) {
 	};
 
 	function runContentUpdate(contentData, id) {
-		var isNewContent = !!id; // if id is not here, it is new content
+		var isNewContent = !id; // if id is not here, it is new content
 		if (!contentData || (!contentData.hasOwnProperty('answer') || !contentData.hasOwnProperty('question'))) return Promise.reject();
 		contentData.word_bag = extractWordBag(contentData);
 		if (!contentData.hasOwnProperty('likes') && !contentData.hasOwnProperty('dislikes')) {
 			contentData.likes = 0;
 			contentData.dislikes = 0;
 		}
-		return Promise.resolve(isNewContent ? db.insert(config.CONTENT, contentData) : db.update(config.CONTENT, id, contentData))
+		return Promise.resolve(isNewContent ? db.insertOne(config.CONTENT, contentData) : db.update(config.CONTENT, id, contentData))
 			.then(applyToWordIndex)
-			.then(updateWordIndexSynonyms)
-			.then(() => true)
-			.catch((error) => error);
+			.then(updateWordIndexSynonyms);
 	}
 
 	function applyToWordIndex(doc) {
@@ -59,7 +57,7 @@ module.exports = function(modLib) {
 						}
 						wordIndexOps.push(db.update(config.WORD_INDEX, wordIndexDoc._id.toString(), wordIndexDoc));
 					} else {
-						wordIndexOps.push(db.insert(config.WORD_INDEX, {
+						wordIndexOps.push(db.insertOne(config.WORD_INDEX, {
 							word: doc.word_bag[i],
 							count: 1,
 							content_refs: [
@@ -77,10 +75,14 @@ module.exports = function(modLib) {
 		return wordIndexDocs.forEach((wordIndexDoc) => {
 			if (wordIndexDoc.content_refs.length > 1) {
 				return getContentDocs(wordIndexDoc.content_refs)
-					.then((wordIndexContentRefs) => applySynonymsToWordIndex(wordIndexContentRefs, wordIndexDoc));
+					.then((wordIndexContentRefs) => {
+						return applySynonymsToWordIndex(wordIndexContentRefs, wordIndexDoc);
+					});
 			}
 		});
 	}
+
+	// TODO: use aggregation query to find outdated sysnonym references to updated content - old uses of its ID
 
 	function applySynonymsToWordIndex(wordIndexContentRefs, wordIndexDoc) {
 		var contentDocsLen = Math.min(wordIndexContentRefs.length, 100);
@@ -93,7 +95,7 @@ module.exports = function(modLib) {
 					var checking = wordIndexContentRefs[j];
 					var matches = commonStrMatch(contentDoc.answer, checking.answer);
 					if (Array.isArray(matches)) {
-						matches.forEach(function (match) {
+						matches.forEach((match) => {
 							if (wordIndexDoc.word === match) {
 								return false;
 							}
@@ -108,7 +110,7 @@ module.exports = function(modLib) {
 								};
 							}
 							else {
-								if (wordIndexDoc.synonyms[match].references.indexOf(contentDoc._id) === -1) {
+								if (wordIndexDoc.synonyms[match].references.contains(contentDoc._id) === -1) {
 									wordIndexDoc.synonyms[match].references.push(contentDoc._id)
 								}
 								wordIndexDoc.synonyms[match].count += 1;

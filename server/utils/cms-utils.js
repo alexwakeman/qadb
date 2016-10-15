@@ -4,6 +4,11 @@
 // 			- remove existing refs
 //			- update content entry
 //			- re-run word index update
+// TODO: 3) remove references to specified content ID
+//			- get content item
+//			- get each word_bag word and perform word_index look up on each
+//			- with each word index doc, remove content ID, if no more content IDs, delete word index doc
+//			- check if content id is in synonyms, remove this id, and if no refs in synonym, delete synonym entry
 
 module.exports = function(modLib) {
 	if (!modLib) throw new Error('Module Library is missing.');
@@ -28,7 +33,7 @@ module.exports = function(modLib) {
 	};
 
 	function runContentUpdate(contentData, id) {
-		var isNewContent = !!id;
+		var isNewContent = !!id; // if id is not here, it is new content
 		if (!contentData || (!contentData.hasOwnProperty('answer') || !contentData.hasOwnProperty('question'))) return Promise.reject();
 		contentData.word_bag = extractWordBag(contentData);
 		if (!contentData.hasOwnProperty('likes') && !contentData.hasOwnProperty('dislikes')) {
@@ -39,29 +44,53 @@ module.exports = function(modLib) {
 			.then(applyToWordIndex)
 			.then(updateWordIndexSynonyms)
 			.then(() => true)
-			.catch(() => false);
+			.catch((error) => error);
+	}
+
+	function applyToWordIndex(doc) {
+		var wordIndexOps = [];
+		return getWordIndexDocs(doc.word_bag)
+			.then((wordIndexDocs) => {
+				wordIndexDocs.forEach((wordIndexDoc, i) => {
+					if (wordIndexDoc) {
+						wordIndexDoc.count += 1;
+						if (wordIndexDoc.content_refs.indexOf(doc._id) === -1) {
+							wordIndexDoc.content_refs.push(doc._id);
+						}
+						wordIndexOps.push(db.update(config.WORD_INDEX, wordIndexDoc._id.toString(), wordIndexDoc));
+					} else {
+						wordIndexOps.push(db.insert(config.WORD_INDEX, {
+							word: doc.word_bag[i],
+							count: 1,
+							content_refs: [
+								doc._id
+							]
+						}));
+					}
+				});
+				return Promise.all(wordIndexOps);
+			});
 	}
 
 	function updateWordIndexSynonyms(wordIndexDocs) {
 		if (!wordIndexDocs || !Array.isArray(wordIndexDocs)) return Promise.reject(false);
 		return wordIndexDocs.forEach((wordIndexDoc) => {
-
 			if (wordIndexDoc.content_refs.length > 1) {
 				return getContentDocs(wordIndexDoc.content_refs)
-					.then((contentDocs) => getSynonyms(contentDocs, wordIndexDoc));
+					.then((wordIndexContentRefs) => applySynonymsToWordIndex(wordIndexContentRefs, wordIndexDoc));
 			}
 		});
 	}
 
-	function getSynonyms(contentDocs, wordIndexDoc) {
-		var contentDocsLen = Math.min(contentDocs.length, 100);
+	function applySynonymsToWordIndex(wordIndexContentRefs, wordIndexDoc) {
+		var contentDocsLen = Math.min(wordIndexContentRefs.length, 100);
 		var contentDoc;
 		var wordIndexUpdates = [];
 		for (var i = 0; i < contentDocsLen; i++) { // limit to 100 x 100 cross-checks for optimisation
-			contentDoc = contentDocs[i];
+			contentDoc = wordIndexContentRefs[i];
 			for (var j = 0; j < contentDocsLen; j++) {
 				if (i !== j) {
-					var checking = contentDocs[j];
+					var checking = wordIndexContentRefs[j];
 					var matches = commonStrMatch(contentDoc.answer, checking.answer);
 					if (Array.isArray(matches)) {
 						matches.forEach(function (match) {
@@ -82,7 +111,7 @@ module.exports = function(modLib) {
 								if (wordIndexDoc.synonyms[match].references.indexOf(contentDoc._id) === -1) {
 									wordIndexDoc.synonyms[match].references.push(contentDoc._id)
 								}
-								wordIndexDoc.synonyms[match].count = wordIndexDoc.synonyms[match].count + 1;
+								wordIndexDoc.synonyms[match].count += 1;
 							}
 						});
 					}
@@ -121,31 +150,6 @@ module.exports = function(modLib) {
 		var contentLookups = [];
 		idList.forEach((id) => contentLookups.push(db.find(config.CONTENT, { _id: id }, 1)));
 		return Promise.all(contentLookups)
-	}
-
-	function applyToWordIndex(doc) {
-		var wordIndexOps = [];
-		return getWordIndexDocs(doc.word_bag)
-			.then((wordIndexDocs) => {
-				wordIndexDocs.forEach((wordIndexDoc, i) => {
-					if (wordIndexDoc) {
-						wordIndexDoc.count += 1;
-						if (wordIndexDoc.content_refs.indexOf(doc._id) === -1) {
-							wordIndexDoc.content_refs.push(doc._id);
-						}
-						wordIndexOps.push(db.update(config.WORD_INDEX, wordIndexDoc._id.toString(), wordIndexDoc));
-					} else {
-						wordIndexOps.push(db.insert(config.WORD_INDEX, {
-							word: doc.word_bag[i],
-							count: 1,
-							content_refs: [
-								doc._id
-							]
-						}));
-					}
-				});
-				return Promise.all(wordIndexOps);
-			});
 	}
 
 	function commonStrMatch(from, to) {

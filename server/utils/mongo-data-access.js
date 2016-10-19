@@ -156,6 +156,31 @@ MongoDataAccess.prototype = (() => {
 		/**
 		 *
 		 * @param collectionName {String} name of the Mongo collection
+		 * @param pullObj {Object} a MongoDB $pull update compatible object https://docs.mongodb.com/manual/reference/operator/update/pull/
+		 * @returns {Promise}
+		 */
+		pull: (collectionName, pullObj) => {
+			return new Promise((resolve, reject) => {
+				if (!pullObj || typeof pullObj !== 'object') return handleErrorResolve(reject, new Error('pullObj param must be of type `object`.'));
+				db.collection(collectionName, (error, collection) => {
+					if (error) {
+						return handleErrorResolve(reject, error);
+					}
+					collection.update(
+						{  },
+						{ $pull: pullObj },
+						{ multi: true },
+						(error, doc) => {
+							handleErrorResolve(reject, error, resolve)
+						}
+					);
+				});
+			});
+		},
+
+		/**
+		 *
+		 * @param collectionName {String} name of the Mongo collection
 		 * @param id {String} Mongo id string (hexadecimal)
 		 */
 		remove: (collectionName, id) => {
@@ -172,7 +197,14 @@ MongoDataAccess.prototype = (() => {
 		/**
 		 * Close the Mongo connection
 		 */
-		close: () => db.close()
+		close: () => db.close(),
+
+		/**
+		 *
+		 * @param id {String} string based BSON ObjectId hexadecimal value
+		 * @returns {*}
+		 */
+		getBsonObjectId: (id) => new ObjectID(id)
 	};
 
 	/**

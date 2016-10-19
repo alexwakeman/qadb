@@ -6,7 +6,7 @@
 			}
 			return false;
 		};
-	Array.prototype.containsWord = Array.prototype.containsWordObj || function (word) {
+	Array.prototype.containsWord = Array.prototype.containsWord || function (word) {
 			var i, l = this.length;
 			for (i = 0; i < l; i++) {
 				if (this[i].word === word) return true;

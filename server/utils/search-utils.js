@@ -53,14 +53,12 @@ module.exports = function (modLib) {
 				.then(extractContent)
 				.then((content) => content.forEach((qaEntry) => resultObj.data.qaResults.push(qaEntry)))
 				.then(() => {
-					var synonymKeys;
 					inputWordIndexMatches.forEach((wordIndexDoc) => {
-						synonymKeys = wordIndexDoc.synonyms ? Object.keys(wordIndexDoc.synonyms) : null;
-						if (!synonymKeys || synonymKeys.length === 0) return false;
-						synonymKeys.forEach((synonym) => {
+						if (!wordIndexDoc.synonyms || wordIndexDoc.synonyms.length === 0) return false;
+						wordIndexDoc.synonyms.forEach((synonym, i) => {
 							var synonymObj;
-							if (!searchTerms.hasEntry(synonym)) { // ensure the entry is not a searchTerms word
-								synonymObj = wordIndexDoc.synonyms[synonym];
+							if (!searchTerms.hasEntry(synonym.word)) { // ensure the entry is not a searchTerms word
+								synonymObj = wordIndexDoc.synonyms[i];
 								synonyms.push(synonymObj);
 							}
 						});

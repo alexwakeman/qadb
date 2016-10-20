@@ -120,16 +120,16 @@ module.exports = function (modLib) {
 		}
 		wordIndexDocs.sort(sortByCount);
 		wordIndexDocs.forEach((wordIndexDoc) => {
-			var len = wordIndexDoc.content_refs.length;
+			var len = wordIndexDoc.content_refs.length,
+				contentRef;
 			for (var i = 0; i < len; i++) {
-				var contentRef = wordIndexDoc.content_refs[i],
-					id = contentRef.toString();
-				if (singleEntries.hasEntry(id)) {
-					if (!multipleEntries.hasEntry(id)) {
-						multipleEntries.push(id);
+				contentRef = wordIndexDoc.content_refs[i];
+				if (singleEntries.contains(contentRef)) {
+					if (!multipleEntries.contains(contentRef)) {
+						multipleEntries.push(contentRef);
 					}
 				} else {
-					singleEntries.push(id);
+					singleEntries.push(contentRef);
 				}
 			}
 		});

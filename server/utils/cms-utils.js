@@ -25,8 +25,8 @@ module.exports = function(modLib) {
 
 	return {
 		mergeNew: (contentData) => runContentUpdate(contentData),
-		mergeUpdate: (contentData, id) => runContentUpdate(contentData, id),
-		remove: (id) => removeContent(id)
+		mergeUpdate: (contentData, id) => runContentUpdate(contentData, db.getBsonObjectId(id)),
+		remove: (id) => removeContent(db.getBsonObjectId(id))
 	};
 
 	function removeContent(id) {
@@ -37,6 +37,7 @@ module.exports = function(modLib) {
 
 	function runContentUpdate(contentData, id) {
 		var isUpdate = !!id; // if id is here, it is an update to existing content
+		var idStr;
 		if (!contentData || (!contentData.hasOwnProperty('answer') || !contentData.hasOwnProperty('question'))) return Promise.reject();
 		contentData.word_bag = extractWordBag(contentData);
 		if (!contentData.hasOwnProperty('likes') && !contentData.hasOwnProperty('dislikes')) {
@@ -44,10 +45,14 @@ module.exports = function(modLib) {
 			contentData.dislikes = 0;
 		}
 		return Promise
-			.resolve(isUpdate ? db.update(config.CONTENT, id, contentData) : db.insertOne(config.CONTENT, contentData))
+			.resolve(isUpdate ? db.updateDocument(config.CONTENT, contentData) : db.insertOne(config.CONTENT, contentData))
+			.then((doc) => idStr = doc._id.toString())
 			.then(() => isUpdate ? removeContentRefsFromWordIndex(id) : null)
-			.then(() => applyToWordIndex(contentData))
-			.then(updateWordIndexSynonyms);
+			.then(() => {
+				return applyToWordIndex(contentData)
+			})
+			.then(updateWordIndexSynonyms)
+			.then(() => idStr);
 	}
 
 	function applyToWordIndex(doc) {
@@ -60,14 +65,12 @@ module.exports = function(modLib) {
 						if (!wordIndexDoc.content_refs.contains(doc._id)) {
 							wordIndexDoc.content_refs.push(doc._id);
 						}
-						wordIndexOps.push(db.update(config.WORD_INDEX, wordIndexDoc._id.toString(), wordIndexDoc));
+						wordIndexOps.push(db.updateDocument(config.WORD_INDEX, wordIndexDoc));
 					} else {
 						wordIndexOps.push(db.insertOne(config.WORD_INDEX, {
 							word: doc.word_bag[i],
 							count: 1,
-							content_refs: [
-								doc._id
-							]
+							content_refs: [doc._id]
 						}));
 					}
 				});
@@ -117,7 +120,7 @@ module.exports = function(modLib) {
 							wordIndexDoc.synonyms[i].count += 1;
 						}
 					});
-					wordIndexUpdates.push(db.update(config.WORD_INDEX, wordIndexDoc._id.toString(), wordIndexDoc));
+					wordIndexUpdates.push(db.updateDocument(config.WORD_INDEX, wordIndexDoc));
 					matches = null;
 					checking = null;
 				}
@@ -142,11 +145,23 @@ module.exports = function(modLib) {
 	}
 
 	function removeContentRefsFromWordIndex(contentId) {
-		var wordIndexUpdates = [],
-			oId = db.getBsonObjectId(contentId);
-		wordIndexUpdates.push(db.pull(config.WORD_INDEX, { content_refs: oId }));
-		wordIndexUpdates.push(db.pull(config.WORD_INDEX, { 'synonyms.references': oId }));
-		return Promise.all(wordIndexUpdates);
+		return Promise
+			.resolve(db.update(config.WORD_INDEX, { content_refs: contentId }, { $inc: { count: -1 }}))
+			.then(() => {
+				db.update(config.WORD_INDEX, { 'synonyms.references': contentId }, { $inc : { 'synonyms.references.$.count': -1 } })
+			})
+			.then(() => {
+				db.pull(config.WORD_INDEX, { content_refs: contentId })
+			})
+			.then(() => {
+				db.pull(config.WORD_INDEX, { 'synonyms.references': contentId })
+			})
+			.then(() => {
+				db.remove(config.WORD_INDEX, { count: 0 }, false)
+			})
+			.then(() => {
+				db.pull(config.WORD_INDEX, { synonyms: { count: 0 }})
+			});
 	}
 
 	function getWordIndexDocs(words) {

@@ -64,35 +64,45 @@ MongoDataAccess.prototype = (() => {
 		 *
 		 * @param collectionName {String} name of the Mongo collection
 		 * @param query {Object} a MongoClient query object
-		 * @param limit {Number} max number of results
+		 * @param limit? {Number} max number of results
+		 * @param sort? {Object} optional sort operator e.g. { age: -1 } https://docs.mongodb.com/manual/reference/method/cursor.sort/
 		 * @returns {Promise} results returned. if limit of `1` is passed, results array is discarded in favour of first result within it.
 		 */
-		find: (collectionName, query, limit) => {
+		find: (collectionName, query, limit, sort) => {
 			if (query.hasOwnProperty('_id') && typeof query._id === 'string') {
 				query._id = new ObjectID(query._id);
 			}
 			return new Promise((resolve, reject) => {
 				db.collection(collectionName, (error, collection) => {
+					var cur;
 					if (error) {
 						return handleErrorResolve(reject, error);
 					}
 					if (limit && typeof limit === 'number' && limit > 0) {
-						collection.find(query).limit(parseInt(limit)).toArray((error, data) => {
-							if (error) {
-								return handleErrorResolve(reject, error);
-							}
-
-							if (limit === 1 && data.length === 1) {
-								resolve(data[0]);
-							} else if (data.length > 1) {
-								resolve(data);
-							} else {
-								resolve(null);
-							}
-						});
+						cur = collection.find(query).limit(parseInt(limit));
 					}
 					else {
-						collection.find(query).toArray((error, data) => handleErrorResolve(reject, error, resolve, data));
+						cur = collection.find(query);
+					}
+
+					if (sort) {
+						cur.sort(sort).toArray(callback);
+					} else {
+						cur.toArray(callback);
+					}
+
+					function callback(error, data) {
+						if (error) {
+							return handleErrorResolve(reject, error);
+						}
+
+						if (limit && limit === 1) {
+							resolve(data[0]);
+						} else if (data.length > 1) {
+							resolve(data);
+						} else {
+							resolve(null);
+						}
 					}
 				});
 			});
@@ -121,32 +131,62 @@ MongoDataAccess.prototype = (() => {
 		},
 
 		/**
-		 *
+		 * Replace existing document with given document
 		 * @param collectionName {String} name of the Mongo collection
-		 * @param id {String} Mongo id string (hexadecimal)
-		 * @param input {Object} the document to store in the collection
-		 * @returns {Promise} the id of the updated document for convenience
+		 * @param document {Object} the document to store in the collection
+		 * @returns {Promise} wrapping the updated document
 		 */
-		update: (collectionName, id, input) => {
+		updateDocument: (collectionName, document) => {
 			return new Promise((resolve, reject) => {
-				if (typeof id !== 'string') return handleErrorResolve(reject, new Error('ID param must be of type `string`.'));
-				if (!collectionName || !id || !input) {
+				var duplicateDoc = {};
+				if (!collectionName || !document) {
 					return handleErrorResolve(reject, new Error('All params are required.'));
 				}
-				var oId = new ObjectID(id);
-				delete input._id;
+				if (document._id) { // user is probably replacing document
+					Object.keys(document).forEach((key) => {
+						duplicateDoc[key] = document[key];
+					});
+					delete duplicateDoc._id;
+				} else {
+					throw new Error('Document must have an _id property');
+				}
 				db.collection(collectionName, (error, collection) => {
 					if (error) {
 						return handleErrorResolve(reject, error);
 					}
 					collection.update(
-						{ _id: oId },
-						{ $set: input },
+						{ _id: document._id },
+						{ $set: duplicateDoc },
 						(error) => {
-							if (!error) {
-								input._id = oId;
-							}
-							handleErrorResolve(reject, error, resolve, input)
+							handleErrorResolve(reject, error, resolve, document)
+						}
+					);
+				});
+			});
+		},
+
+		/**
+		 *
+		 * @param collectionName {String} name of the Mongo collection
+		 * @param findObj {Object} a Mongo query object
+		 * @param updateObj {Object} object containing Mongo update operators
+		 * @returns {Promise}
+		 */
+		update: (collectionName, findObj, updateObj) => {
+			return new Promise((resolve, reject) => {
+				if (!collectionName || !findObj || !updateObj) {
+					return handleErrorResolve(reject, new Error('All params are required.'));
+				}
+				db.collection(collectionName, (error, collection) => {
+					if (error) {
+						return handleErrorResolve(reject, error);
+					}
+					collection.update(
+						findObj,
+						updateObj,
+						{ multi: true },
+						(error) => {
+							handleErrorResolve(reject, error, resolve)
 						}
 					);
 				});
@@ -170,7 +210,7 @@ MongoDataAccess.prototype = (() => {
 						{  },
 						{ $pull: pullObj },
 						{ multi: true },
-						(error, doc) => {
+						(error) => {
 							handleErrorResolve(reject, error, resolve)
 						}
 					);
@@ -181,15 +221,16 @@ MongoDataAccess.prototype = (() => {
 		/**
 		 *
 		 * @param collectionName {String} name of the Mongo collection
-		 * @param id {String} Mongo id string (hexadecimal)
+		 * @param query {Object} Mongo query object
+		 * @param justOne? {Boolean} indicates if many or one doc to be removed
 		 */
-		remove: (collectionName, id) => {
+		remove: (collectionName, query, justOne) => {
 			return new Promise((resolve, reject) => {
-				if (typeof id !== 'string') return handleErrorResolve(reject, new Error('`id` must be a hexadecimal BSON ObjectID `string`.'));
-				var oId = new ObjectID(id); // generate a binary of id
+				if (!query) handleErrorResolve(reject, new Error('query object is required.'));
+				if (!justOne && justOne !== false) justOne = true; // default to just one document
 				db.collection(collectionName, (error, collection) => {
 					handleErrorResolve(reject, error);
-					collection.remove({ _id: oId }, {justOne: true}, (error) => handleErrorResolve(reject, error, resolve, id))
+					collection.remove(query, { justOne: justOne } , (error) => handleErrorResolve(reject, error, resolve));
 				});
 			});
 		},
@@ -201,7 +242,7 @@ MongoDataAccess.prototype = (() => {
 
 		/**
 		 *
-		 * @param id {String} string based BSON ObjectId hexadecimal value
+		 * @param id {String} string based ObjectId hexadecimal value
 		 * @returns {*}
 		 */
 		getBsonObjectId: (id) => new ObjectID(id)

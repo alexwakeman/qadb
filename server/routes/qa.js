@@ -12,16 +12,17 @@ module.exports = function(modLib) {
 			var id = req.query.id,
 				doc = req.body;
 			modLib.cmsUtils.mergeUpdate(doc, id)
-				.then(() => res.send(''), (error) => res.status(500).send(error.message));
+				.then(() => res.send(id), (error) => res.status(500).send(error.message));
 		})
 		.post(modLib.authChecker, (req, res) => {
 			var doc = req.body;
 			modLib.cmsUtils.mergeNew(doc)
-				.then(() => res.send(''), (error) => res.status(500).send(error.message));
+				.then((id) => res.send(id), (error) => res.status(500).send(error.message));
 		})
 		.delete(modLib.authChecker, (req, res) => {
 			var id = req.query.input;
-
+			modLib.cmsUtils.remove(id)
+				.then(() => res.send(id), (error) => res.status(500).send(error.message))
 		});
 	return modLib.router;
 };

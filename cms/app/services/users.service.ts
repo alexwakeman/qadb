@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {Http, RequestOptions, Headers, URLSearchParams} from '@angular/http';
+import {Http, RequestOptions, Headers} from '@angular/http';
 
 import {User} from '../models/user.model';
 import {Service} from './abstract.service'
@@ -26,11 +26,8 @@ export class UsersService extends Service {
     editUser(user:User):Promise<void> {
         let body = JSON.stringify(user);
         let headers = new Headers({'Content-Type': 'application/json'});
-        let params = new URLSearchParams();
         let options: RequestOptions;
-        console.log(user);
-        params.set('id', user._id);
-        options = new RequestOptions({headers: headers, search: params});
+        options = new RequestOptions({headers: headers});
         return this.http.put(this.usersEndpoint, body, options)
             .toPromise()
             .then(() => {}) // no-op
@@ -45,9 +42,7 @@ export class UsersService extends Service {
     }
 
     getUser(id:string):Promise<User> {
-        let params = new URLSearchParams();
-        params.set('id', id);
-        return this.http.get(this.usersEndpoint, { search: params })
+        return this.http.get(this.usersEndpoint + '/' + id)
             .toPromise()
             .then(super.dataToModel(User))
             .catch(super.handleError);
@@ -68,9 +63,7 @@ export class UsersService extends Service {
     }
 
     deleteUser(id:string) {
-        let params = new URLSearchParams();
-        params.set('id', id);
-        return this.http.delete(this.usersEndpoint, { search: params })
+        return this.http.delete(this.usersEndpoint + '/' + id)
             .toPromise()
             .catch(super.handleError);
     }

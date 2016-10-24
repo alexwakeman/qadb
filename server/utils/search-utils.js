@@ -150,9 +150,9 @@ module.exports = function (modLib) {
 		return Promise.all(contentLookups);
 	}
 
-	function sortByCount(a, b) {
-		a.count = parseInt(a.count);
-		b.count = parseInt(b.count);
-		return a.count < b.count ? 1 : a.count > b.count ? -1 : 0
-	}
+	// function sortByCount(a, b) {
+	// 	a.count = parseInt(a.count);
+	// 	b.count = parseInt(b.count);
+	// 	return a.count < b.count ? 1 : a.count > b.count ? -1 : 0
+	// }
 };

@@ -1,15 +1,6 @@
-
-// TODO: 1) merge new input with database data
-// TODO: 2) update existing data with new data
-// 			- remove existing refs
-//			- update content entry
-//			- re-run word index update
-// TODO: 3) remove references to specified content ID
-//			- get content item
-//			- get each word_bag word and perform word_index look up on each
-//			- with each word index doc, remove content ID, if no more content IDs, delete word index doc
-//			- check if content id is in synonyms, remove this id, and if no refs in synonym, delete synonym entry
-
+/*
+ See helpers.js for the Array.prototype augmentations used here
+ */
 module.exports = function(modLib) {
 	if (!modLib) throw new Error('Module Library is missing.');
 
@@ -25,18 +16,17 @@ module.exports = function(modLib) {
 
 	return {
 		mergeNew: (contentData) => runContentUpdate(contentData),
-		mergeUpdate: (contentData, id) => runContentUpdate(contentData, db.getBsonObjectId(id)),
+		mergeUpdate: (contentData, id) => runContentUpdate(contentData, true),
 		remove: (id) => removeContent(db.getBsonObjectId(id))
 	};
 
 	function removeContent(id) {
 		return Promise
-			.resolve(() => removeContentRefsFromWordIndex(id))
-			.then(() => db.remove(config.CONTENT, id));
+			.resolve(db.remove(config.CONTENT, { _id: id }))
+			.then(() => removeContentRefsFromWordIndex(id));
 	}
 
-	function runContentUpdate(contentData, id) {
-		var isUpdate = !!id; // if id is here, it is an update to existing content
+	function runContentUpdate(contentData, isUpdate) {
 		var idStr;
 		if (!contentData || (!contentData.hasOwnProperty('answer') || !contentData.hasOwnProperty('question'))) return Promise.reject();
 		contentData.word_bag = extractWordBag(contentData);
@@ -47,7 +37,7 @@ module.exports = function(modLib) {
 		return Promise
 			.resolve(isUpdate ? db.updateDocument(config.CONTENT, contentData) : db.insertOne(config.CONTENT, contentData))
 			.then((doc) => idStr = doc._id.toString())
-			.then(() => isUpdate ? removeContentRefsFromWordIndex(id) : null)
+			.then(() => isUpdate ? removeContentRefsFromWordIndex(contentData._id) : null)
 			.then(() => {
 				return applyToWordIndex(contentData)
 			})
@@ -147,21 +137,11 @@ module.exports = function(modLib) {
 	function removeContentRefsFromWordIndex(contentId) {
 		return Promise
 			.resolve(db.update(config.WORD_INDEX, { content_refs: contentId }, { $inc: { count: -1 }}))
-			.then(() => {
-				db.update(config.WORD_INDEX, { 'synonyms.references': contentId }, { $inc : { 'synonyms.references.$.count': -1 } })
-			})
-			.then(() => {
-				db.pull(config.WORD_INDEX, { content_refs: contentId })
-			})
-			.then(() => {
-				db.pull(config.WORD_INDEX, { 'synonyms.references': contentId })
-			})
-			.then(() => {
-				db.remove(config.WORD_INDEX, { count: 0 }, false)
-			})
-			.then(() => {
-				db.pull(config.WORD_INDEX, { synonyms: { count: 0 }})
-			});
+			.then(() => db.update(config.WORD_INDEX, { 'synonyms.references': contentId }, { $inc : { 'synonyms.$.count': -1 } }))
+			.then(() => db.pull(config.WORD_INDEX, {}, { content_refs: contentId }))
+			.then(() => db.pull(config.WORD_INDEX, { 'synonyms.references': contentId }, { 'synonyms.$.references': contentId }))
+			.then(() => db.remove(config.WORD_INDEX, { count: 0 }, false))
+			.then(() => db.pull(config.WORD_INDEX, {}, { synonyms: { count: 0 }}));
 	}
 
 	function getWordIndexDocs(words) {

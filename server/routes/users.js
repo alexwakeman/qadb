@@ -2,6 +2,7 @@ var cryptPassword = require('../utils/crypto-utils').cryptPassword;
 
 module.exports = function (modLib) {
 	if (!modLib) throw new Error('Module Library is missing.');
+	var db = modLib.db;
 	modLib.router.route('/users/current')
 		.get(modLib.authChecker, (req, res) => res.json({data: req.session.user}));
 
@@ -17,25 +18,15 @@ module.exports = function (modLib) {
 
 	modLib.router.route('/users')
 		.get(modLib.authChecker, (req, res) => {
-			var id = req.query.id;
-			if (id) {
-				modLib.db.find('users', {_id: id})
-					.then((data) => {
-						delete data.pw;
-						res.json({data: data});
-					}, () => res.status(404).send('User not found.'));
-			}
-			else {
-				modLib.db.findAll('users')
-					.then((data) => {
-						if (data && Array.isArray(data)) {
-							data.forEach((entry) => {
-								delete entry.pw;
-							});
-						}
-						res.json({data: data});
-					}, (error) => res.status(500).send(error.message));
-			}
+			db.find('users', {})
+				.then((data) => {
+					if (data && Array.isArray(data)) {
+						data.forEach((entry) => {
+							delete entry.pw;
+						});
+					}
+					res.json({data: data});
+				}, (error) => res.status(500).send(error.message));
 		})
 		.post(modLib.authChecker, (req, res) => {
 			var input = req.body;
@@ -45,29 +36,38 @@ module.exports = function (modLib) {
 					return;
 				}
 				input.pw = pw;
-				delete input.password; // must delete plain text version of password
+				delete input.password; // delete plain text version of password
 				delete input._id; // remove the ID part (if present) as Mongo creates this
-				modLib.db.addEntry('users', input)
+				db.insertOne('users', input)
 					.then(() => res.status(200).send(''), (error) => res.status(500).send(error.message));
 			});
+		});
+
+	modLib.router.route('/users/:id')
+		.get(modLib.authChecker, (req, res) => {
+			var id = req.params.id;
+			db.find('users', { _id: id })
+				.then((data) => {
+					delete data.pw;
+					res.json({data: data});
+				}, () => res.status(404).send('User not found.'));
 		})
-		.put(modLib.authChecker, function (req, res) {
+		.put(modLib.authChecker, (req, res) => {
 			var input = req.body;
-			var id = req.query.id;
 			cryptPassword(input.password, function (error, pw) {
 				if (error) {
 					res.status(500).send(error.message);
 					return;
 				}
-				delete input.password; // must delete plain text version of password
+				delete input.password; // delete plain text version of password
 				input.pw = pw;
-				modLib.db.updateEntry('users', id, input)
+				db.updateDocument('users', input)
 					.then(() => res.status(200).send(''), (error) => res.status(500).send(error.message));
 			});
 		})
 		.delete(modLib.authChecker, function (req, res) {
-			var id = req.query.id;
-			modLib.db.removeEntry('users', id)
+			var id = req.params.id;
+			db.remove('users', id)
 				.then(() => res.status(200).send(''), (error) => res.status(500).send(error.message));
 		});
 	return modLib.router;

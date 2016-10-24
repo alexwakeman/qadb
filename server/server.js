@@ -31,7 +31,7 @@ var MongoDataAccess = require('./utils/mongo-data-access'),
 	hours = 48,
 	time = 3600000 * hours,
 	modLib = {}; // Module Library - an object containing re-usable cross-app components, avoids using globals
-require('./utils/helpers');
+
 
 // init the module library and server
 modLib.express = require('express');
@@ -42,6 +42,7 @@ modLib.db.connect({host: dbAddr});
 modLib.router = modLib.express.Router();
 modLib.config = require('./config/config');
 modLib.config.SERVER = IS_PRODUCTION ? modLib.config.PROD_SERVER : modLib.config.DEV_SERVER;
+modLib.utils = require('./utils/utils')();
 
 // apply security modules: rate limiter and HTTP clean-up
 modLib.app.use(['/login', '/api'], apiLimiter);

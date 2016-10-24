@@ -32,10 +32,11 @@ module.exports = function (modLib) {
 
 			if (!inputString || typeof inputString !== 'string') return Promise.resolve(resultObj);
 
-			inputString = inputString.toLowerCase();
-			inputString = inputString.replace(boundedStopsRegex, ''); // remove unnecessary words (stop words)
-			inputString = inputString.replace(wordsOnlyRegex, ''); // remove all non-alpha chars
-			inputString = inputString.replace(multiSpace, ' '); // replace multi-spaces with one space
+			inputString = inputString
+				.toLowerCase()
+				.replace(boundedStopsRegex, '') // remove unnecessary words (stop words)
+				.replace(wordsOnlyRegex, '') // remove all non-alpha chars
+				.replace(multiSpace, ' '); // replace multi-spaces with one space
 
 			if (!inputString) return Promise.resolve(resultObj);
 
@@ -65,7 +66,6 @@ module.exports = function (modLib) {
 
 					if (synonyms.length > 0) {
 						var noDupeSynonyms = [];
-						// synonyms.sort(sortByCount);
 						synonyms.forEach((entry) => noDupeSynonyms.containsWord(entry.word) ? null : noDupeSynonyms.push(entry));
 						if (noDupeSynonyms.length > maxSynonymResults) {
 							noDupeSynonyms = noDupeSynonyms.slice(0, maxSynonymResults);
@@ -93,7 +93,7 @@ module.exports = function (modLib) {
 		suggest: function (input) {
 			if (!input) return Promise.resolve({data: []});
 			input = input.replace(wordsOnlyRegex, '');
-			return Promise.resolve(db.find(config.CONTENT, { 'question': { $regex: '^' + input + '.*', $options: 'i' } }, 5))
+			return db.find(config.CONTENT, { 'question': { $regex: '^' + input + '.*', $options: 'i' } }, 5)
 				.then((results) => {
 					return {
 						data: results
@@ -118,7 +118,6 @@ module.exports = function (modLib) {
 		if (!wordIndexDocs || wordIndexDocs.length === 0) {
 			return [];
 		}
-		//wordIndexDocs.sort(sortByCount);
 		wordIndexDocs.forEach((wordIndexDoc) => {
 			var len = wordIndexDoc.content_refs.length,
 				contentRef;
@@ -149,8 +148,6 @@ module.exports = function (modLib) {
 	function slicePage(page, content) {
 		var startIndex, endIndex, maxIndex;
 		if (page && typeof page === 'number' && page > 0) {
-			// do the pagination in the app logic instead of using MongoD, as it is more efficient
-			// see https://docs.mongodb.com/manual/reference/method/cursor.skip/
 			maxIndex = content.length - 1;
 			startIndex = (page - 1) * resultsPerPage;
 			startIndex = startIndex >= maxIndex ? startIndex - resultsPerPage : startIndex;
@@ -160,10 +157,4 @@ module.exports = function (modLib) {
 		}
 		return content;
 	}
-
-	// function sortByCount(a, b) {
-	// 	a.count = parseInt(a.count);
-	// 	b.count = parseInt(b.count);
-	// 	return a.count < b.count ? 1 : a.count > b.count ? -1 : 0
-	// }
 };

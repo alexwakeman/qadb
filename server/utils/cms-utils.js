@@ -104,7 +104,7 @@ module.exports = function(modLib) {
 								count: 1
 							};
 						} else {
-							if (!wordIndexDoc.synonyms[i].references.contains(contentDoc._id)) {
+							if (!wordIndexDoc.synonyms[i].references.containsObjectId(contentDoc._id)) {
 								wordIndexDoc.synonyms[i].references.push(contentDoc._id)
 							}
 							wordIndexDoc.synonyms[i].count += 1;
@@ -171,6 +171,7 @@ module.exports = function(modLib) {
 		to = to.split(' ');
 		dupeCheck(from);
 		dupeCheck(to);
+		singleUseWords = null;
 		return repeatedWordsList;
 
 		function dupeCheck(textList) {
@@ -184,6 +185,7 @@ module.exports = function(modLib) {
 					singleUseWords.push(word);
 				}
 			});
+			return textList;
 		}
 	}
 };

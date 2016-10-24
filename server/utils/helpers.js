@@ -6,6 +6,13 @@
 			}
 			return false;
 		};
+	Array.prototype.containsObjectId = Array.prototype.containsObjectId || function (objIdInstance) {
+			var i, l = this.length;
+			for (i = 0; i < l; i++) {
+				if (this[i].equals(objIdInstance)) return true;
+			}
+			return false;
+		};
 	Array.prototype.containsWord = Array.prototype.containsWord || function (word) {
 			var i, l = this.length;
 			for (i = 0; i < l; i++) {

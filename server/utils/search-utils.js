@@ -15,9 +15,10 @@ module.exports = function (modLib) {
 	const synonymSearchThreshold = 8; // if less than synonymSearchThreshold results from direct matches from input, use synonym lookup
 	const maxSynonymLookupResults = 10; // limit of synonym word referenced content
 	const maxSynonymResults = 12;
+	const resultsPerPage = 10;
 
 	return {
-		performSearch: function (inputString) {
+		performSearch: function (inputString, page) {
 			var searchTerms,
 				resultObj = {
 					data: {
@@ -25,7 +26,6 @@ module.exports = function (modLib) {
 						synonyms: []
 					}
 				},
-				wordIndexLookups = [],
 				synonymWordIndexLookups = [],
 				synonyms = [],
 				inputWordIndexMatches = [];
@@ -40,10 +40,9 @@ module.exports = function (modLib) {
 			if (!inputString) return Promise.resolve(resultObj);
 
 			searchTerms = inputString.split(' ');
-			searchTerms.forEach((word) => wordIndexLookups.push(db.find(config.WORD_INDEX, {word: word}, 1)));
 
 			return Promise
-				.all(wordIndexLookups)
+				.resolve(db.find(config.WORD_INDEX, { word: { $in: searchTerms }}, false, { count: -1}))
 				.then((wordIndexDocs) => {
 					if (wordIndexDocs.length === 0) throw new Error('No records found'); // exits Promise chain
 					inputWordIndexMatches = wordIndexDocs.filter((entry) => entry); // ensure each entry is valid (exists)
@@ -66,7 +65,7 @@ module.exports = function (modLib) {
 
 					if (synonyms.length > 0) {
 						var noDupeSynonyms = [];
-						synonyms.sort(sortByCount);
+						// synonyms.sort(sortByCount);
 						synonyms.forEach((entry) => noDupeSynonyms.containsWord(entry.word) ? null : noDupeSynonyms.push(entry));
 						if (noDupeSynonyms.length > maxSynonymResults) {
 							noDupeSynonyms = noDupeSynonyms.slice(0, maxSynonymResults);
@@ -77,8 +76,8 @@ module.exports = function (modLib) {
 						Only perform synonym word look-ups if results from user's actual input are lacking
 					 */
 					if (resultObj.data.qaResults.length < synonymSearchThreshold && synonyms.length > 0) {
-						synonyms.forEach((synonym) => synonymWordIndexLookups.push(db.find(config.WORD_INDEX, { word: synonym.word }, 1)));
-						return Promise.all(synonymWordIndexLookups);
+						synonyms.forEach((synonym) => synonymWordIndexLookups.push(synonym.word));
+						return db.find(config.WORD_INDEX, { word: { $in: synonymWordIndexLookups }}, false, {count: -1});
 					}
 				})
 				.then((synonymMatches) => synonymMatches ? synonymMatches.filter((match) => match) : [])
@@ -86,6 +85,7 @@ module.exports = function (modLib) {
 				.then(extractContent)
 				.then((content) => {
 					content.forEach((qaEntry, index) => index <= maxSynonymLookupResults ? resultObj.data.qaResults.push(qaEntry) : null);
+					resultObj.data.qaResults = slicePage(page, resultObj.data.qaResults);
 					return resultObj;
 				});
 		},
@@ -118,7 +118,7 @@ module.exports = function (modLib) {
 		if (!wordIndexDocs || wordIndexDocs.length === 0) {
 			return [];
 		}
-		wordIndexDocs.sort(sortByCount);
+		//wordIndexDocs.sort(sortByCount);
 		wordIndexDocs.forEach((wordIndexDoc) => {
 			var len = wordIndexDoc.content_refs.length,
 				contentRef;
@@ -140,14 +140,25 @@ module.exports = function (modLib) {
 	}
 
 	function extractContent(sortedContentRefs) {
-		var contentLookups = [];
 		if (!sortedContentRefs || sortedContentRefs.length === 0) {
-			return contentLookups;
+			return Promise.resolve([]);
 		}
-		sortedContentRefs.results.forEach((matchRef) => {
-			contentLookups.push(db.find(config.CONTENT, { _id: matchRef }, 1))
-		});
-		return Promise.all(contentLookups);
+		return db.find(config.CONTENT, { _id: { $in: sortedContentRefs.results } }, false);
+	}
+
+	function slicePage(page, content) {
+		var startIndex, endIndex, maxIndex;
+		if (page && typeof page === 'number' && page > 0) {
+			// do the pagination in the app logic instead of using MongoD, as it is more efficient
+			// see https://docs.mongodb.com/manual/reference/method/cursor.skip/
+			maxIndex = content.length - 1;
+			startIndex = (page - 1) * resultsPerPage;
+			startIndex = startIndex >= maxIndex ? startIndex - resultsPerPage : startIndex;
+			endIndex = startIndex + resultsPerPage;
+			endIndex = endIndex > content.length - 1 ? content.length - 1 : endIndex;
+			content = content.slice(startIndex, endIndex);
+		}
+		return content;
 	}
 
 	// function sortByCount(a, b) {

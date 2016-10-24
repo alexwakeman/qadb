@@ -61,7 +61,7 @@ MongoDataAccess.prototype = (() => {
 			}
 			return new Promise((resolve, reject) => {
 				db.collection(collectionName, (error, collection) => {
-					var cur, startIndex, endIndex, maxIndex;
+					var cur;
 					if (error) {
 						return handleErrorResolve(reject, error);
 					}
@@ -78,13 +78,14 @@ MongoDataAccess.prototype = (() => {
 					cur.toArray(callback);
 
 					function callback(error, data) {
+						var startIndex, endIndex, maxIndex;
 						if (error) {
 							return handleErrorResolve(reject, error);
 						}
 
 						if (limit && limit === 1) {
 							resolve(data[0]);
-						} else if (data.length > 1) {
+						} else if (data.length >= 1) {
 							if (page && typeof page === 'number' && page > 0) {
 								// do the pagination in the app logic instead of using MongoD, as it is more efficient
 								// see https://docs.mongodb.com/manual/reference/method/cursor.skip/
@@ -97,7 +98,7 @@ MongoDataAccess.prototype = (() => {
 							}
 							resolve(data);
 						} else {
-							resolve(null);
+							resolve([]);
 						}
 					}
 				});
@@ -164,7 +165,8 @@ MongoDataAccess.prototype = (() => {
 						{ _id: document._id },
 						{ $set: duplicateDoc },
 						(error) => {
-							handleErrorResolve(reject, error, resolve, document)
+							handleErrorResolve(reject, error, resolve, document);
+							duplicateDoc = null;
 						}
 					);
 				});
@@ -217,7 +219,7 @@ MongoDataAccess.prototype = (() => {
 						findObj,
 						{ $pull: pullObj },
 						{ multi: true },
-						(error, doc) => {
+						(error) => {
 							handleErrorResolve(reject, error, resolve)
 						}
 					);

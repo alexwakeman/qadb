@@ -42,7 +42,7 @@ modLib.db.connect({host: dbAddr});
 modLib.router = modLib.express.Router();
 modLib.config = require('./config/config');
 modLib.config.SERVER = IS_PRODUCTION ? modLib.config.PROD_SERVER : modLib.config.DEV_SERVER;
-modLib.utils = require('./utils/utils')();
+modLib.utils = require('./utils/utils');
 
 // apply security modules: rate limiter and HTTP clean-up
 modLib.app.use(['/login', '/api'], apiLimiter);

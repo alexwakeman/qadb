@@ -12,7 +12,10 @@ module.exports = function(modLib) {
 			var query = req.params.input,
 				page = parseInt(req.params.page);
 			modLib.searchUtils.performSearch(query, page)
-				.then((results) => res.json(results), () => res.send({ data: { qaResults: [] }}));
+				.then((results) => res.json(results),
+					(err) => {
+						res.send({ data: { qaResults: [], totalPages: 0, synonyms: [] }})
+					});
 		});
 	return modLib.router;
 };

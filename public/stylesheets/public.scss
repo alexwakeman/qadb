@@ -63,6 +63,14 @@ img.logo {
             }
         }
     }
+
+    .page-nav {
+        margin-bottom: 30px;
+        margin-top: 20px;
+        .next {
+            text-align: right;
+        }
+    }
 }
 
 
@@ -86,5 +94,12 @@ img.logo {
         width: 100%;
         float: left;
         padding: 2px 2px 2px 8px;
+    }
+}
+
+.answer {
+    .back {
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
 }

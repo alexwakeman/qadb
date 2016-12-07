@@ -1,0 +1,33 @@
+<div class="container">
+	<div class="row">
+		<h2>Search</h2>
+		<div class="col-sm-12">
+			<div class="form-group">
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="search" required [ngModel]="searchTerm">
+				</div>
+				<div class="col-sm-2">
+					<button type="button" (click)="submitSearch()">Search</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-sm-12">
+			<div class="row" *ngFor="let result of results.data.qaResults; let i = index;">
+				<div class="col-sm-1">
+					{{i + 1}}
+				</div>
+				<div class="col-sm-4">
+					{{result.question}}
+				</div>
+				<div class="col-sm-4">
+					{{result.answer}}
+				</div>
+				<div class="col-sm-3">
+					<button class="btn glyphicon-stop" (click)="deleteQA(result._id)">Delete</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

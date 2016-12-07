@@ -102,6 +102,7 @@ module.exports = function(modLib) {
 							wordIndexDoc.synonyms[i].count += 1;
 						}
 					});
+					wordIndexDoc.synonymCount = wordIndexDoc.synonyms.length;
 					wordIndexUpdates.push(db.updateDocument(config.WORD_INDEX, wordIndexDoc));
 					matches = null;
 					checking = null;

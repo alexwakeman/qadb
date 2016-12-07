@@ -1,4 +1,4 @@
-module.exports = function () {
+module.exports = (function () {
 	Array.prototype.contains = Array.prototype.contains || function (obj) {
 			var i, l = this.length;
 			for (i = 0; i < l; i++) {
@@ -46,6 +46,6 @@ module.exports = function () {
 		}
 	};
 	return utils;
-};
+})();
 
 

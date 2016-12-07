@@ -37,7 +37,10 @@ export class QuestionAnswer extends React.Component<QuestionAnswerProps, Questio
     render() {
         return (
             <div className="answer col-sm-6 col-xs-offset-3">
-                <a href="javascript:history.back()">Back</a>
+                <div className="row">
+                    <div className="col-sm-6 back"><a href="javascript:history.back()">Back</a></div>
+                </div>
+
                 <h4 className="text-center">{this.state.qa.question}</h4>
                 <span>{this.state.qa.answer}</span>
             </div>

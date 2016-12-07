@@ -27,9 +27,11 @@ export class SearchForm extends React.Component<SearchFormProps, SearchFormState
         this.applySearchParamToView();
         this.props.eventEngine.on(Const.DID_NAVIGATE, this.applySearchParamToView);
         Observable.fromEvent(this.input, 'keyup').debounceTime(300).subscribe(() => {
-            Utils.get('suggest', this.state.searchTerm, (response: any) => {
-                this.props.eventEngine.emitEvent(Const.SUGGEST_RESULT_EVT, [response.data]);
-            });
+            if (this.state.searchTerm) {
+                Utils.get('suggest', this.state.searchTerm, (response: any) => {
+                    this.props.eventEngine.emitEvent(Const.SUGGEST_RESULT_EVT, [response.data]);
+                });
+            }
         });
     }
 

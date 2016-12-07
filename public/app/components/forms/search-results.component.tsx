@@ -5,28 +5,36 @@ import {ReactRouter} from "../../utils/router";
 import {Const} from "../../const/const";
 
 interface SearchResultsProps { eventEngine: EventEmitter, router: ReactRouter }
-interface SearchResultsState { searchResults: any, synonyms: any, searchTerm: string }
+interface SearchResultsState { searchResults: any, synonyms: any, searchTerm: string, totalPages: number }
 
 export class SearchResults extends React.Component<SearchResultsProps, SearchResultsState> {
+    private page:number;
     constructor() {
         super();
         this.updateHandler = this.updateHandler.bind(this);
     }
 
     componentWillMount() {
+        this.page = 1;
         this.props.eventEngine.on(Const.UPDATE_VIEW, this.updateHandler);
-        this.setState({ searchResults: [], synonyms: [], searchTerm: '' });
+        this.setState({ searchResults: [], synonyms: [], searchTerm: '', totalPages: 1 });
         this.fetchSearchResults();
     }
 
     updateHandler() {
+        this.page = 1;
         this.fetchSearchResults();
     }
 
     fetchSearchResults() {
         var searchTerm = this.props.router.getParam();
-        Utils.get('search', searchTerm, (response: any) => {
-            this.setState({ searchResults: response.data.qaResults, synonyms: response.data.synonyms, searchTerm: searchTerm });
+        Utils.search(searchTerm, this.page, (response: any) => {
+            this.setState({
+                searchResults: response.data.qaResults,
+                synonyms: response.data.synonyms,
+                searchTerm: searchTerm,
+                totalPages: response.data.totalPages
+            });
         });
     }
 
@@ -69,6 +77,15 @@ export class SearchResults extends React.Component<SearchResultsProps, SearchRes
                                 )
                             })}
                         </div>
+                    </div>
+                </div>
+                <div className="row page-nav">
+                    <div className="col-sm-3 prev">
+                        {(this.page > 1) && <a href="javascript:void(0);" onClick={() => {this.page -= 1; this.fetchSearchResults(); } }>Prev</a>}
+                    </div>
+                    <div className="col-sm-6"></div>
+                    <div className="col-sm-3 next">
+                        {(this.page < this.state.totalPages) && <a href="javascript:void(0);" onClick={() => { this.page += 1; this.fetchSearchResults(); window.scrollTo(0, 0); } }>Next</a>}
                     </div>
                 </div>
             </div>

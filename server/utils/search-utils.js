@@ -18,6 +18,7 @@ module.exports = function (modLib) {
 				resultObj = {
 					data: {
 						qaResults: [],
+						totalPages: 0,
 						synonyms: []
 					}
 				},
@@ -30,7 +31,7 @@ module.exports = function (modLib) {
 			searchTerms = utils.stringToWordArray(inputString);
 
 			return Promise
-				.resolve(db.find(config.WORD_INDEX, { word: { $in: searchTerms }}, false, { count: -1}))
+				.resolve(db.find(config.WORD_INDEX, { word: { $in: searchTerms }}, false, { synonymCount: -1, count: -1 }))
 				.then((wordIndexDocs) => {
 					if (wordIndexDocs.length === 0) throw new Error('No records found'); // exits Promise chain
 					inputWordIndexMatches = wordIndexDocs.filter((entry) => entry); // ensure each entry is valid (exists)
@@ -72,6 +73,7 @@ module.exports = function (modLib) {
 				.then(extractContent)
 				.then((content) => {
 					content.forEach((qaEntry, index) => index <= maxSynonymLookupResults ? resultObj.data.qaResults.push(qaEntry) : null);
+					resultObj.data.totalPages = getTotalPageCount(resultObj.data.qaResults);
 					resultObj.data.qaResults = slicePage(page, resultObj.data.qaResults);
 					return resultObj;
 				});
@@ -110,8 +112,8 @@ module.exports = function (modLib) {
 				contentRef;
 			for (var i = 0; i < len; i++) {
 				contentRef = wordIndexDoc.content_refs[i];
-				if (singleEntries.contains(contentRef)) {
-					if (!multipleEntries.contains(contentRef)) {
+				if (singleEntries.containsObjectId(contentRef)) {
+					if (!multipleEntries.containsObjectId(contentRef)) {
 						multipleEntries.push(contentRef);
 					}
 				} else {
@@ -126,10 +128,14 @@ module.exports = function (modLib) {
 	}
 
 	function extractContent(sortedContentRefs) {
+		var contentLookups = [];
 		if (!sortedContentRefs || sortedContentRefs.length === 0) {
-			return Promise.resolve([]);
+			return contentLookups;
 		}
-		return db.find(config.CONTENT, { _id: { $in: sortedContentRefs.results } }, false);
+		sortedContentRefs.results.forEach((matchRef) => {
+			contentLookups.push(db.find(config.CONTENT, { _id: matchRef }, 1))
+		});
+		return Promise.all(contentLookups);
 	}
 
 	function slicePage(page, content) {
@@ -143,5 +149,9 @@ module.exports = function (modLib) {
 			content = content.slice(startIndex, endIndex);
 		}
 		return content;
+	}
+
+	function getTotalPageCount(content) {
+		return Math.ceil(content.length / resultsPerPage);
 	}
 };

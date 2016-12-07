@@ -41,12 +41,18 @@ export class ReactRouter {
         return ReactRouter.getBaseRoute();
     }
 
+    // on change of URL path, update the current component, assign it to the App
+    // and then emit an UPDATE event to draw the component content
     private navigated() {
         this.app.setState({Elem: this.getCurrentComponent()});
         this.eventEngine.emitEvent(Const.UPDATE_VIEW, []);
         this.eventEngine.emitEvent(Const.DID_NAVIGATE, []);
     }
 
+    /*
+        Get the correct component based on the route and configuration,
+        ensure all UPDATE listeners are removed
+     */
     private getCurrentComponent() {
         var baseRoute = ReactRouter.getBaseRoute();
         var component:React.Component<any, any> = null;

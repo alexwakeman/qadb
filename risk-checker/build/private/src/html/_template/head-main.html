@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<?php $build_number = md5('build'.@file_get_contents(dirname(__FILE__).'/../../../build_number.txt')); ?>
+<!--[if lt IE 8]>    <html class="oldie legacy" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="ie8 oldie" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <title><?php echo $title ?></title>
+    <meta name="viewport" content="width=device-width">
+    <script>
+document.getElementsByTagName('html')[0].className += ' js';
+if (!('querySelector' in document) || !('addEventListener' in window)) {
+  document.getElementsByTagName('html')[0].className += ' low-js';
+}
+if ('geolocation' in navigator) {
+  document.getElementsByTagName('html')[0].className += ' geolocation';
+}
+window.ebrc_build_number = '<?php echo $build_number ?>';
+window.ebrc_page_name = '<?php echo @$page_id ?>';
+    </script>
+    <link rel="stylesheet" href="./css/main.css">
+  </head>
+  <body>
+    <div class="hide"><a href="#content">Skip to content</a></div>
+    <div class="wrapper">
+      <header role="banner">
+        <div class="separator wide-show"></div>
+        <div class="header">
+          <div class="frame">
+            <div class="risk-checker">
+              <a href="./"><img src="./img/my_risk_checker.png" alt="My RiskChecker"/></a>
+            </div>
+          </div><!-- .frame -->
+        </div><!-- .header -->
+      </header>

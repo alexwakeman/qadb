@@ -1,0 +1,40 @@
+// Provide clear focus outline for tabbing.
+*:focus {
+  outline: 1px solid orange;
+}
+// Buttons clip the outline so we use the border instead.
+.btn:focus {
+  outline-width: 0;
+  border-color: orange;
+}
+// Hide the outline when JS is enabled to de-clutter visual appearance.
+.js *:focus {
+  outline-width: 0;
+}
+.js .btn:focus {
+  border-color: @button-outline;
+}
+// Re-enable the outline when JS detects the keyboard is being used.
+.keyboard *:focus {
+  outline-width: 1px;
+}
+.keyboard .btn:focus {
+  outline-width: 0;
+  border-color: orange;
+}
+// Visually hide text but leave accessible for screen readers.
+.hide {
+  position: absolute;
+  left: -999em;
+  top: -999em;
+}
+
+input.placeholder {
+  color: @lightest-accessible;
+}
+.placeholder(@lightest-accessible);
+
+// Old IE likes to place an outline on focused <div>s - it's not helpful and we don't want it.
+.oldie div:focus {
+  outline-width: 0 !important;
+}

@@ -1,0 +1,118 @@
+// HIC SVNT DRACONES
+// This doesn't follow the standard structure for this project and the
+// original author didn't add any comments explaining functionality.
+
+window.EMBARRASSING_BODIES = (function (module, $) {
+  "use_strict";
+
+  $.support.cors = true;
+  $.ajaxSetup({
+    error: function(xhr) {
+      console.log('ERROR : Request Status: ' + xhr.status + ' Status Text: ' + xhr.statusText + ' ' + xhr.responseText);
+    }
+  });
+  $(".ask-question form").submit(function() {
+    $(this).find("input[name='question-input']").blur();
+    return false;
+  });
+  $("input[name='question-input']").on("keyup",function() {
+    var offset = $(this).offset();
+
+    var q = $(this).val();
+
+    if(q.length > 0) {
+      q = q.replace(" ","%20AND%20");
+      $.when(doSRCH2Query(q)).done(function(data) {
+
+        $("#question-suggest-list").find(".suggest").remove();
+        var i = 0,k = 0;
+        // Sample data? [{"id":"222","question":"Why lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt?"}];
+        var template;
+        var questions = [];
+        var query_keywords = [];
+        var results = [];
+        var id;
+
+        query_keywords = data.query_keywords;
+        results = data.results;
+
+        for(;i<results.length;i++) {
+
+          id = results[i].record_id;
+
+          for(k=0;k<query_keywords.length;k++) {
+			if((k===0 && query_keywords[k].length>1) || (k>0 && query_keywords[k].length>2)) 
+			{
+				term = new RegExp(query_keywords[k],"g");
+				results[i].record.question = results[i].record.question.replace(term,"<span class='keyword'>" + query_keywords[k] + "</span>");
+			}
+          }
+		template = $(".question-template").clone();
+          template.removeClass("question-template").addClass("suggest");
+
+          template.find("a").prop("href","/answer-question.html#" + id).html(results[i].record.question);
+          questions[i] = template;
+        }
+        $("#question-suggest-list").removeClass("hidden").prepend(questions);
+
+        $("html,body").animate({
+          scrollTop:offset.top
+        });
+      });
+    } else {
+      $("#question-suggest-list").find(".suggest").remove();
+      $("#question-suggest-list").addClass("hidden");
+    }
+
+  });
+
+  if(window.location.hash) {
+    var hash = window.location.hash.substring(1);
+    $(".loading").removeClass("hidden");
+
+    // I think this is where the question is loaded.
+    $.when(doSRCH2AnswerQuery(hash)).done(function(data) {
+      $(".loading").addClass("hidden");
+      $("#question-title").html(data.results[0].record.question);
+      $("#answer-p").html(data.results[0].record.answer);
+      // Send the analytics data.
+      module.ANALYTICS.trackPageview(data.results[0].record.question);
+    });
+  }
+
+
+  $("#ask-question-form").submit(function() {
+    var question = $("textarea[name='question-txt']").val();
+
+    s=s_gi("channel4dotcom");
+    s.linkTrackVars = 'eVar31,events';
+    s.linkTrackEvents = 'event31';
+    s.events = 'event31';
+    s.eVar31='eb:submit:' + question;
+    s.tl(this,'o',s.eVar31);
+
+
+    $("#submit-question").addClass("hidden");
+    $("#question-feedback").removeClass("hidden");
+
+    return false;
+  });
+
+
+  function doSRCH2Query(q) {
+    return $.ajax({
+      url:"/okana/index.php?q="+q,
+      dataType:"json"
+    });
+  }
+
+  function doSRCH2AnswerQuery(q) {
+    return $.ajax({
+      url:"/okana/index.php?id="+q,
+      dataType:"json"
+    });
+  }
+
+  return module;
+
+}(window.EMBARRASSING_BODIES || {}, window.jQuery));

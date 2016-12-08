@@ -1,0 +1,26 @@
+          <div class="footer"></div>
+        </div><!-- #content -->
+      </section>
+    </div><!-- .wrapper -->
+    <div class="footer"></div>
+    <footer>
+                <div id="place-the-footer-here">
+
+                        <!-- The all4Nav footer UI will be placed here -->
+    <footer>
+    <div id="cache"></div>
+    <noscript><img src="http://webstat.channel4.com/b/ss/channel4dotcom/1/H.25.2--NS/0?[AQB]&amp;cdp=3&amp;[AQE]"
+height="1" width="1" border="0" alt="" /></noscript>
+    <script>
+(function () {
+  var s, s0, main_js = '/js/main.js?_=' + window.ebrc_build_number;
+  s = document.createElement('script');
+  s.type = 'text/javascript';
+  s.async = true;
+  s.src = main_js;
+  s0 = document.getElementsByTagName('script')[0];
+  s0.parentNode.insertBefore(s, s0);
+}());
+    </script>
+  </body>
+</html>

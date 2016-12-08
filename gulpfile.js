@@ -8,6 +8,8 @@ var runSequence = require('run-sequence');
 var sass = require('gulp-sass');
 var nodemon = require('gulp-nodemon');
 var webpack = require('webpack-stream');
+var shell = require('gulp-shell');
+var less = require('gulp-less');
 
 var dependencies = [
 	/*
@@ -32,6 +34,52 @@ var dependencies = [
 	srcDest('node_modules/rxjs/**/*.js', 'dist/public/libs/rxjs'),
 	srcDest('node_modules/wolfy87-eventemitter/EventEmitter.js', 'dist/public/libs/eventemitter')
 ];
+
+gulp.task('riskchecker:js', function() {
+	gulp.src([
+		'risk-checker/build/private/src/js/lib/jquery.js',
+		'risk-checker/build/private/src/js/lib/bootstrap-modal.js',
+		'risk-checker/build/private/src/js/lib/moustache.js',
+		'risk-checker/build/private/src/js/lib/qunit.js',
+		'risk-checker/build/private/src/js/module.js',
+		'risk-checker/build/private/src/js/main.js',
+		'risk-checker/build/private/src/js/accessibility.js',
+		'risk-checker/build/private/src/js/analytics.js',
+		'risk-checker/build/private/src/js/fonts.js',
+		'risk-checker/build/private/src/js/interface.js',
+		'risk-checker/build/private/src/js/jquery.vjustify.js',
+		'risk-checker/build/private/src/js/menu.js',
+		'risk-checker/build/private/src/js/polyfill.js',
+		'risk-checker/build/private/src/js/questions.js',
+		'risk-checker/build/private/src/js/video.js',
+		'risk-checker/build/private/src/js/risk_checker/*.js',
+	])
+		.pipe(concat('main.js'))
+		.pipe(gulp.dest('risk-checker/build/public/js/'));
+});
+
+gulp.task('riskchecker:less', function () {
+	gulp.src(['risk-checker/build/private/src/less/main.less', 'risk-checker/build/private/src/less/osmap.less'])
+		.pipe(less({
+			paths: [ path.join(__dirname, 'less', 'includes') ]
+		}))
+		.pipe(gulp.dest('risk-checker/build/public/css'));
+});
+
+gulp.task('riskchecker:html', shell.task([
+	'php ./risk-checker/build/private/bin/rebuild.php'
+]));
+
+gulp.task('watch', ['build', 'server'], function() {
+	gulp.watch('cms/stylesheets/*.scss', ['cms:sass']);
+	gulp.watch('cms/**/*.html', ['cms:html']);
+	gulp.watch('cms/**/*.ts', ['cms:app']);
+	gulp.watch('cms/loader/systemjs.config.js', ['cms:loader']);
+
+	gulp.watch('public/stylesheets/*.scss', ['public:sass']);
+	gulp.watch('public/**/*.html', ['public:html']);
+	gulp.watch('public/**/*.+(tsx|ts)', ['public:app']);
+});
 
 gulp.task('clean', function () {
 	return del('dist')
@@ -102,6 +150,10 @@ gulp.task('watch', ['build', 'server'], function() {
 	gulp.watch('public/stylesheets/*.scss', ['public:sass']);
 	gulp.watch('public/**/*.html', ['public:html']);
 	gulp.watch('public/**/*.+(tsx|ts)', ['public:app']);
+
+	gulp.watch('risk-checker/build/private/src/**/*.php', ['riskchecker:html']);
+	gulp.watch('risk-checker/build/private/src/**/*.js', ['riskchecker:js']);
+	gulp.watch('risk-checker/build/private/src/**/*.less', ['riskchecker:less']);
 });
 
 gulp.task('server', function() { // starts and restarts the node server
@@ -116,7 +168,7 @@ gulp.task('server', function() { // starts and restarts the node server
 
 gulp.task('build', function (callback) {
 	runSequence('clean', 'libs', 'cms:app', 'cms:html', 'cms:login', 'cms:sass',
-		'public:app', 'public:sass', 'public:html', callback);
+		'public:app', 'public:sass', 'public:html', 'riskchecker:html', 'riskchecker:js', 'riskchecker:less', callback);
 });
 
 gulp.task('default', ['build']);

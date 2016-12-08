@@ -1,0 +1,27 @@
+<?php
+  $title = 'More Info on STIs | Resources | Embarrassing Bodies My RiskChecker';
+  $page_id = 'common-sti-info';
+  $res_sti = true;
+  $back_page = 'resources';
+?>
+<?php include(dirname(__FILE__).'/_template/head-main.html') ?>
+          <div class="frame">
+            <h1>More info on STIs</h1>
+            <p>Here's what we're at risk of - find out about the most common Sexually Transmitted Infections (STIs) and how to avoid them. There are photos and descriptions so you get a sense of what each one can look like, and what it could do to your precious genitals.</p>
+            <ol class="buttons two-column">
+              <li><a href="./chlamydia.html" class="btn c4">Chlamydia</a></li>
+              <li><a href="./genital-herpes.html" class="btn c4">Genital herpes</a></li>
+              <li><a href="./genital-warts.html" class="btn c4">Genital warts</a></li>
+              <li><a href="./gonorrhoea.html" class="btn c4">Gonorrhoea</a></li>
+              <li><a href="./hepatitis.html" class="btn c4">Hepatitis B &amp; C</a></li>
+              <li><a href="./hiv.html" class="btn c4">HIV</a></li>
+              <li><a href="./public-lice.html" class="btn c4">Pubic lice</a></li>
+              <li><a href="./scabies.html" class="btn c4">Scabies</a></li>
+              <li><a href="./syphilis.html" class="btn c4">Syphilis</a></li>
+              <li><a href="./trichomoniasis.html" class="btn c4">Trichomoniasis</a></li>
+            </ol>
+            <ul class="buttons">
+              <li><a href="./resources.html" class="btn btn-nav c4">Back</a></li>
+            </ul>
+          </div><!-- .frame -->
+<?php include(dirname(__FILE__).'/_template/foot.html') ?>

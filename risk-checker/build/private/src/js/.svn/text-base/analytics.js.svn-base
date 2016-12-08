@@ -1,0 +1,129 @@
+/**
+ * Handles running the analytics in a sane and controlled manner.
+ *
+ * The original Omniture code is a lot of a mess and contains document.write calls which are totally unsuitable for our needs.
+ * The GA tracking has been added in a rush of deadline panic.
+ */
+window.EMBARRASSING_BODIES = (function (module, $) {
+  "use_strict";
+
+  module.ANALYTICS = (function (module, submodule, $) {
+
+    var script_loaded = false; // Has the analytics script been included?
+
+    /**
+     * Loads the analytics script.
+     *
+     * @param {string} page_name Name of page to pass to tracking when script loads.
+     * @param {string|array} data Additional data to send to the server.
+     */
+    var loadScript = function (page_name, data) {
+      if (script_loaded) {
+        if (typeof page_name !== 'undefined') {
+          submodule.track(page_name, data);
+        }
+        return;
+      }
+      $('body').append('<div id="s_code"/>'); // Used to inject code as part of tracking.
+      $.ajax({
+        'url': '/js/s_code.js?_=' + window.ebrc_build_number,
+        'dataType': 'script',
+        'cache': true,
+        'success': function() {
+          script_loaded = true;
+          submodule.track(page_name, data);
+        },
+        'error': function () {
+          module.log('ANALYTICS tracking script failed to load. Fatal error.');
+        }
+      });
+    };
+
+    /**
+     * Makes a tracking call.
+     *
+     * @param {string} page_name Name of page to pass to tracking when script loads.
+     * @param {string} data Additional data to send to the server.
+     */
+    submodule.track = function (page_name, data) {
+      page_name = page_name || window.ebrc_page_name || document.title;
+      if (!script_loaded) {
+        loadScript(page_name, data);
+        return;
+      }
+      if (typeof window.s === 'undefined') {
+        module.log('ANALYTICS window.s is undefined. Fatal error.');
+        return;
+      }
+      s.pageName = 'eb:rc:' + window.encodeURIComponent(page_name);
+      if (typeof data === 'string') {
+        s.prop31 = 'eb:' + data;
+        s.eVar31 = 'eb:' + data;
+      }
+      var s_code = s.t();
+      if (s_code) {
+        // I have no idea what this does but it's in the original as document.write.
+        // Whenever I try and inspect it it's an empty string.
+        $('#s_code').html(s_code);
+      }
+    };
+    module.registerLoad(submodule.track);
+
+    /**
+     * Sends data to GA to track an event.
+     */
+    var trackGA = function (category, event, type, data) {
+      if (typeof window.ga !== 'function') {
+        module.log('ANALYTICS window.ga is undefined. Fatal error.');
+        return;
+      }
+      var extra_data = {
+        'page': document.location.pathname + document.location.search + document.location.hash
+      };
+      if (type && data) {
+        window.ga('send', category, event, type, data, extra_data);
+      }
+      else {
+        window.ga('send', category, event);
+      }
+      //module.log('ANALYTICS window.ga: send,' + category +',' + event + ',' + type + ',' + data);
+    };
+
+    /**
+     * Tracks events on links with class of .ga-track.
+     *
+     * Detail for the events are included with data attributes.
+     */
+    var gaTracking = function () {
+      $('.ga-track').on('click', function () {
+        var type, event, data;
+
+        event = $(this).data('ebrc-track-event');
+        type = $(this).data('ebrc-track-type');
+
+        if ($(this).data('ebrc-track-data')) {
+          data = $(this).data('ebrc-track-data');
+        } else if ($(this).data('ebrc-track-source')) {
+          data = $($(this).data('ebrc-track-source')).val();
+        }
+
+        trackGA('event', event, type, data);
+      });
+    };
+    module.registerLoad(gaTracking);
+
+    /**
+     * Tracks data on a page view.
+     */
+    submodule.trackPageview = function (title, url) {
+      title = title || document.title;
+      url = url || document.location.pathname + document.location.search + document.location.hash;
+      trackGA('pageview', url);
+    };
+
+    return submodule;
+  }(module, module.ANALYTICS || {}, $));
+
+  return module;
+
+}(window.EMBARRASSING_BODIES || {}, window.jQuery));

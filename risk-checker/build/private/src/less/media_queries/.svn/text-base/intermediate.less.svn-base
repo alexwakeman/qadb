@@ -1,0 +1,105 @@
+@media all and (min-width:30em) {
+  .buttons {
+    &.two-column {
+      li {
+        width:48%;
+        margin-right: 2%;
+        &:nth-of-type(even) {
+          margin-right: 0;
+          margin-left: 2%;
+        }
+        .btn-tertiary,
+		.btn-secondary {
+          font-size: 1em;
+          width: 100%;
+        }
+      }
+    }
+  }
+  .progress {
+    ol {
+      li {
+        font-size: 2em;
+        line-height: 0.5em;
+        margin-left: 0.1em;
+      }
+    }
+  }
+
+  .clinic-finder {
+    dl {
+      dt {
+        clear: left;
+        float: left;
+        width: 25%;
+        margin-bottom: 1em;
+      }
+      dd {
+        float: left;
+        width: 75%;
+        padding-left: 1em;
+      }
+    }
+    .input {
+      font-size: 2em;
+      padding: 0.25em;
+    }
+  }
+}
+
+@media all and (min-height:40em) {
+  .modal {
+    position: fixed;
+  }
+  .modal-body {
+    max-height: 35em;
+  }
+}
+
+
+@media all and (min-width:41em) {
+  .modal {
+    left: 50%;
+    width: 40em;
+    margin-left: -20em;
+  }
+  .progress {
+    ol {
+      li {
+        font-size: 3em;
+        line-height: 0.3em;
+      }
+    }
+  }
+}
+
+@media all and (min-width:48em) {
+  .js .resources {
+    .first-column {
+      float: left;
+      max-width: 50%;
+      margin-right: 5%;
+    }
+
+    .second-column {
+      float: right;
+      max-width: 45%;
+    }
+
+    .narrow {
+      display: none;
+    }
+    .wide {
+      display: block;
+    }
+  }
+}
+
+@media all and (min-width: 640px) {
+  .risk-level {
+    background-image: url(/img/risk-level_bg.png);
+  }
+  #c4header-container {
+    display: inherit;
+  }
+}

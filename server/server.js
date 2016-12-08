@@ -73,6 +73,7 @@ modLib.app.use(bodyParser.json({limit: '50mb'}));
 
 // ** ROUTING ** //
 modLib.app.use('/', modLib.express.static(path.join(__dirname, '../dist/public/')));
+modLib.app.use('/risk-checker', modLib.express.static(path.join(__dirname, '../risk-checker/build/public/')));
 modLib.app.use('/login', modLib.express.static(path.join(__dirname, '../dist/login/')));
 modLib.app.all('/cms', (req, res, next) => ENABLE_AUTH ? req.session.isAuth ? next() : res.redirect('/login') : next());
 modLib.app.use('/cms', modLib.express.static(path.join(__dirname, '../dist/cms/')));

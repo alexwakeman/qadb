@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<!--[if lt IE 8]>    <html class="oldie legacy" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="ie8 oldie" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <title>My RiskChecker</title>
+    <meta name="viewport" content="width=device-width">
+    <script>
+document.getElementsByTagName('html')[0].className += ' js';
+if (!('querySelector' in document) || !('addEventListener' in window)) {
+  document.getElementsByTagName('html')[0].className += ' low-js';
+}
+if ('geolocation' in navigator) {
+  document.getElementsByTagName('html')[0].className += ' geolocation';
+}
+window.ebrc_build_number = '635783baebc6594a8f53a130b86663cb';
+window.ebrc_page_name = 'risk_checker';
+    </script>
+    <link rel="stylesheet" href="./css/main.css">
+  </head>
+  <body>
+    <div class="hide"><a href="#content">Skip to content</a></div>
+    <div class="wrapper">
+      <header role="banner">
+        <div class="separator wide-show"></div>
+        <div class="header">
+          <div class="frame">
+            <div class="risk-checker">
+              <a href="./"><img src="./img/my_risk_checker.png" alt="My RiskChecker"/></a>
+            </div>
+          </div><!-- .frame -->
+        </div><!-- .header -->
+      </header>
+      <div class="separator wide-hide"></div>
+      <section role="main">
+        <div id="content">
+<div class="frame health-question">
+	<div class="ask-question">
+		<h2>Got a sexual health question?</h2>
+		<p>Start typing a phrase or keyword in this search box for a clear and frank answer...</p>
+		<p>When you start typing, a list of possible questions will appear below the search box. Choose the most
+			relevant question. If no relevant question appears, you can <a href="./submit-question.html">submit a new
+				one</a>.</p>
+		<form>
+			<div class="search-box">
+				<input type="text" placeholder="Type phrase/keyword" name="question-input" class="input search"/><a href="./" class="btn search-btn">Search</a>
+			</div>
+
+			<ul id="question-suggest-list" class="hidden">
+
+				<li class="question-template"><a href=""></a></li>
+				<li class="submit-it"><a href="./submit-question.html">Can't find a suitable question and answer?<br/>Submit
+					your question here</a></li>
+			</ul>
+		</form>
+		<div class="automated-service">
+			<h2>Automated Service</h2>
+			<p>This is an automated service. You are searching a resource of the most commonly asked sexual health
+				questions and related answers. Your question will be matched with the closest available answer. If no
+				suitable match is available, you can <a href="./submit-question.html">submit a question</a> and an answer
+				may be added to the database in the future.</p>
+		</div>
+	</div>
+	<ul class="buttons">
+		<li><a href="./" class="btn">Not taken the test?</a></li>
+	</ul>
+
+	<div class="js-disabled">
+		<p>In order to ask a question you will need to enable JavaScript.</p>
+		<p>Instructions on how to do this in a number of browsers can be found at <a
+				href="http://www.enable-javascript.com/" rel="external">www.enable-javascript.com</a>.</p>
+	</div><!-- .js-disabled -->
+</div><!-- .frame -->
+          <div class="footer"></div>
+        </div><!-- #content -->
+      </section>
+    </div><!-- .wrapper -->
+    <div class="footer"></div>
+    <script>
+    (function () {
+      var s, s0, main_js = './js/main.js?_=' + window.ebrc_build_number;
+      s = document.createElement('script');
+      s.type = 'text/javascript';
+      s.async = true;
+      s.src = main_js;
+      s0 = document.getElementsByTagName('script')[0];
+      s0.parentNode.insertBefore(s, s0);
+    }());
+    </script>
+  </body>
+</html>

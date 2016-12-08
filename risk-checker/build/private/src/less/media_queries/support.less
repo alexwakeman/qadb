@@ -1,0 +1,46 @@
+// Media query for devices that support media queries.
+// This should include floats as all browsers that support MQs will support floats.
+@media only all {
+  // Bring in a decent box model.
+  * {
+    -moz-box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    box-sizing: border-box;
+  }
+
+  .header {
+    overflow: hidden;
+  }
+  .logo {
+    float: left;
+  }
+  .risk-checker {
+    float: right;
+  }
+
+  .menu-toggle {
+    float: right;
+    margin-left: 0;
+  }
+
+  .buttons {
+    overflow: hidden;
+    li {
+      float: left;
+      width: 100%;
+      text-align: center;
+      .btn {
+        width: 100%; // Can now be set to 100% as we (should) have a decent box model.
+      }
+	  .btn-tertiary,
+      .btn-secondary {
+        font-size: 0.85em;
+        width: auto;
+      }
+    }
+  }
+  // Hide the c4 header on small screens but not by default.
+  #c4header-container {
+    display: none;
+  }
+}

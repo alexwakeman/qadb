@@ -1,0 +1,80 @@
+@font-face {
+  font-family: 'c4headlineregular';
+  src: url('/fonts/c4headline-webfont.eot');
+  src: url('/fonts/c4headline-webfont.eot?#iefix') format('embedded-opentype'),
+       url('/fonts/c4headline-webfont.woff') format('woff'),
+       url('/fonts/c4headline-webfont.ttf') format('truetype'),
+       url('/fonts/c4headline-webfont.svg#c4headlineregular') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@base-font: Trebuchet MS, Sans-Serif;
+@c4-fallback-font: Trebuchet MS, Sans-Serif;
+@c4-font: c4headlineregular, Trebuchet MS, Sans-Serif;
+
+body {
+  font-family: @base-font;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: @c4-fallback-font;
+}
+
+// Start with the fallback font to prevent text not appearing until font loads.
+.c4, .btn {
+  font-family:  @c4-fallback-font;
+  font-weight: bold;
+}
+
+// Change the font to C4 when the font has loaded.
+.wf-c4headlineregular-n4-active {
+  .c4, .btn  {
+    font-family:  @c4-font;
+    font-weight: normal;
+  }
+}
+
+/*
+  Vertical rhythm from: http://drewish.com/tools/vertical-rhythm
+  Base font: 16px
+  Line height: 28px
+*/
+p, .base-text {
+  font-size: 1em;
+  line-height: 1.75em;
+  margin: 0 0 1.75em 0;
+}
+
+small, .small-text {
+  font-size: 0.875em; /* 14px */
+  line-height: 2em; /* 28px */
+  margin-top: 2em;
+  margin-bottom: 0em;
+}
+// Need a specificity override here - poorly thought out and added after the last minute - sorry.
+small p {
+  line-height: 2em;
+  margin-top: 2em;
+}
+
+.medium-text {
+  font-size: 1.125em; /* 18px */
+  line-height: 1.5556em; /* 28px */
+  margin-top: 1.5556em;
+  margin-bottom: 0em;
+}
+
+.large-text {
+  font-size: 1.25em; /* 20px */
+  line-height: 1.4em; /* 28px */
+  margin-top: 1.4em;
+  margin-bottom: 0em;
+}
+
+.x-large-text {
+  font-size: 2em; /* 32px */
+  line-height: 1.75em; /* 56px */
+  margin-top: 0.875em;
+  margin-bottom: 0em;
+}

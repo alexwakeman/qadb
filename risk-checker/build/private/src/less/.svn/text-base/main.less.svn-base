@@ -1,0 +1,254 @@
+@import 'theme.less';
+@import 'mixins.less';
+
+@import 'normalize.less';
+
+@import 'accessibility.less';
+@import 'sprite.less';
+
+html {
+  overflow-y: scroll;
+}
+
+body {
+  background: @frame;
+  color: @text;
+  font-size: 100% !important; // Font size and em calculations work on this being 16px.
+}
+
+a {
+  color: @highlight;
+  text-decoration: underline;
+  &:hover {
+    color: lighten(@highlight, 10%);
+  }
+}
+
+img {
+  max-width: 100%;
+}
+
+.highlight {
+  color: @highlight;
+}
+
+.wrapper {
+  background: @background;
+  margin: auto;
+  max-width: 896px;
+}
+
+.frame {
+  #percentage .padding-left(20, 640);
+  #percentage .padding-right(36, 640);
+  max-width: 50em;
+  margin: auto;
+}
+
+.logo-large {
+  display: none;
+  text-indent:-9999px
+}
+
+.logo {
+  #percentage .width(212, 584);
+  color: @frame;
+  margin-top: 17px;
+  max-width: 212px;
+  min-width: 104px;
+}
+.risk-checker {
+  #percentage .width(204, 584);
+  margin-top: 13px;
+  max-width: 204px;
+  min-width: 104px;
+}
+
+.header {
+  border-top: 25px solid @highlight;
+}
+
+.separator {
+  #gradient .linear(@highlight, @highlight, @background);
+  height: 22px;
+  width: 100%;
+}
+
+.wide-show {
+  display: none;
+}
+
+.menu {
+  background-color: @highlight;
+  color: @highlight-forground;
+  border-bottom: 1px solid @ui-frame;
+  min-height: 40px;
+  .menu-title {
+    #percentage .font-size(20, 16);
+  }
+  .menu-bar {
+    padding-top: 1em;
+    padding-bottom: 1em;
+  }
+  ul {
+    background: @background;
+    list-style-type: none;
+    margin: 0;
+    padding: 0 5%;
+  }
+   li {
+    border-bottom: 1px solid @ui-frame;
+    &:last-of-type {
+      border-bottom-width: 0;
+    }
+    a {
+      display: inline-block;
+      color: @text;
+      text-decoration: none;
+      width: 100%;
+      padding: 1em 0;
+      &:hover {
+        color: @highlight;
+        background: @highlight-hover-bg;
+      }
+    }
+  }
+  a {
+    color: @highlight-forground;
+    text-decoration: none;
+  }
+  .menu-toggle {
+    margin-top: 0.18em;
+    min-height: 44px; // Per a11y review.
+    margin-left: 1em;
+  }
+  .menu-back {
+    float: left;
+    margin-top: -3px; // Dealing with an image so absolute dimensions.
+    margin-right: 2%;
+    min-height: 44px; // Per a11y review.
+  }
+  .expandable {
+    z-index: 9999; // Has to be over 999 for Open Street Map.
+  }
+}
+
+.footer {
+  height: 2em;
+}
+
+.terms-and-conditions {
+  color: @terms-and-conditions-text;
+  background: @terms-and-conditions-bg;
+  a {
+    color: @terms-and-conditions-text;
+  }
+}
+
+.non-modal .terms-and-conditions {
+  padding-top: 1em;
+  padding-bottom: 1em;
+  color: @text;
+  background: @background;
+  a {
+    color: @highlight;
+  }
+}
+
+.resources {
+  h1, h2, h3, h4, h5, h6 {
+    color: @highlight;
+  }
+  .content {
+    background-color: @resources-content-bg;
+    overflow: hidden;
+    padding-top: 1em;
+  }
+}
+
+.video {
+  .loading {
+    text-align: center;
+    padding-top: 33%;
+    border: 2px dashed @ui-frame;
+  }
+  .player {
+    height: 1px;
+  }
+}
+.load-notice p {
+  margin: 0;
+}
+
+#cache {
+  width: 1px;
+  height: 1px;
+  .opacity(1);
+}
+
+// Change the starting appearance when we have JS enabled:
+.js-enabled {
+  display: none;
+}
+.js {
+  .menu {
+    border-bottom-width: 0px;
+    .expandable {
+      display: none;
+      position: absolute; // Causes it to float over the content when it's expanded.
+      width: 100%;
+      max-width: 896px;
+    }
+    .overhang {
+      #gradient .linear(transparent, @ui-frame, transparent);
+      content: "";
+      display: block;
+      height: 1em;
+    }
+  }
+  .resources {
+    .wide {
+      display: none;
+    }
+    .narrow {
+      display: block;
+      margin: auto;
+    }
+  }
+  .js-disabled {
+    display: none;
+  }
+  .js-enabled {
+    display: inherit;
+  }
+  &.low-js {
+    .js-enabled {
+      display: block;
+    }
+  }
+}
+
+
+// Use the specificity to show the low JS support message.
+.js .low-js-show, .low-js-show {
+  display: none;
+}
+.js.low-js .low-js-show {
+  display: block;
+}
+
+@import 'buttons.less';
+
+@import 'risk_checker.less';
+@import 'clinic_finder.less';
+@import 'ask_question.less';
+
+@import 'modals.less';
+
+@import 'typography.less';
+
+@import 'c4-overrides.less';
+
+@import 'media_queries/support.less';
+@import 'media_queries/intermediate.less';
+@import 'media_queries/wide.less';

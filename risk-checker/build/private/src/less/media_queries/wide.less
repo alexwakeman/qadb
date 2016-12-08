@@ -1,0 +1,67 @@
+
+@media all and (min-width:909px) { // Using pixels as this brings in the banner which is a fixed width asset.
+  .wide-show {
+    display: block;
+  }
+  .wide-hide {
+    display: none;
+  }
+  .logo-large {
+    display: block;
+    width: 100%;
+    height: 171px;
+    background-image: url(/img/banner.gif);
+    background-color: @frame;
+  }
+  .header {
+    border-top-width: 0;
+  }
+  .logo {
+    position: absolute;
+    top: -999em;
+    left: -999em;
+  }
+  .risk-checker {
+    margin-left: auto;
+    margin-right: auto;
+    float: none;
+  }
+
+  #c4header-container {
+    display: block;
+  }
+}
+
+
+@media all and (min-width: 960px) {
+  #cookieNotification {
+    .explanation {
+      display: inline-block;
+      float: left;
+      margin: 0 23px 5px 105px;
+      width: 645px;
+    }
+    .acceptance-area {
+      float: left;
+      width: 160px;
+    }
+  }
+}
+
+
+@media all and (min-width: 980px) {
+  #c4footer {
+    .c4footerLinks {
+      display: block;
+      float: left;
+      width: 670px;
+    }
+    .c4footerImages {
+      float: left;
+    }
+    p {
+      margin: 1.4em 0 0 274px;
+      width: 665px;
+    }
+  }
+}

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<?php $build_number = md5('build'.@file_get_contents(dirname(__FILE__).'/../../../build_number.txt')); ?>
+<!--[if lt IE 8]>    <html class="oldie legacy" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="ie8 oldie" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <title><?php echo $title ?></title>
+    <meta name="viewport" content="width=device-width">
+    <script>
+document.getElementsByTagName('html')[0].className += ' js';
+if (!('querySelector' in document) || !('addEventListener' in window)) {
+  document.getElementsByTagName('html')[0].className += ' low-js';
+}
+if ('geolocation' in navigator) {
+  document.getElementsByTagName('html')[0].className += ' geolocation';
+}
+window.ebrc_build_number = '<?php echo $build_number ?>';
+window.ebrc_page_name = '<?php echo @$page_id ?>';
+    </script>
+    <!-- Start C4 head include. --><meta name="c4Id" content="fourid" /><!-- 4iD flag --><meta name="FourIdDomain" content="4id.channel4.com" /><!-- 4iD Domain -->
+<!-- GLOBAL HEADER & FOOTER CSS -->
+
+<script type="text/javascript" src="//all4nav.channel4.com/static/4nav/latest/js/all4nav.loader.js?header=place-the-header-here&footer=place-the-footer-here"></script>
+
+<!-- AUTOCOMPLETE SEARCH, IDENTITY MANAGEMENT -->
+
+
+
+<!-- Maxymiser script start -->
+<script type="text/javascript" src="//service.maxymiser.net/cdn/channel4/js/mmcore.js"></script>
+<!-- Maxymiser script end -->
+
+<!-- NavTracer -->
+<script type="text/javascript">
+    if (window.C4) { C4.NavTracer && C4.NavTracer.add('head', '/external/head/small'); }
+</script><!-- End C4 head include. -->
+    <link rel="stylesheet" href="/css/main.css?_=<?php echo $build_number ?>">
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-51176888-1', 'auto');
+  ga('send', 'pageview');
+
+</script>
+  </head>
+  <body>
+    <div class="hide"><a href="#content">Skip to content</a></div>
+    <header>
+
+		<div id="place-the-header-here">
+
+			<!-- The all4Nav header UI will be placed here -->
+
+    </header>
+    <div class="wrapper">
+      <header role="banner">
+        <a href="http://www.channel4embarrassingillnesses.com/" title="Visit the Embarrassing Bodies site"><div class="logo-large">Embarrassing Bodies</div></a>
+        <div class="separator wide-show"></div>
+        <div class="header">
+          <div class="frame">
+            <div class="logo">
+              <a href="http://www.channel4embarrassingillnesses.com/"><img src="/img/embarrassing_bodies.png" alt="Embarassing Bodies"/></a>
+            </div>
+            <div class="risk-checker">
+              <a href="/"><img src="/img/my_risk_checker.png" alt="My RiskChecker"/></a>
+            </div>
+          </div><!-- .frame -->
+        </div><!-- .header -->
+      </header>

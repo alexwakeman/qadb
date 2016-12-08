@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<!--[if lt IE 8]>    <html class="oldie legacy" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="ie8 oldie" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en"> <!--<![endif]-->
+  <head>
+    <meta charset="utf-8">
+    <title>My RiskChecker</title>
+    <meta name="viewport" content="width=device-width">
+    <script>
+document.getElementsByTagName('html')[0].className += ' js';
+if (!('querySelector' in document) || !('addEventListener' in window)) {
+  document.getElementsByTagName('html')[0].className += ' low-js';
+}
+if ('geolocation' in navigator) {
+  document.getElementsByTagName('html')[0].className += ' geolocation';
+}
+window.ebrc_build_number = '635783baebc6594a8f53a130b86663cb';
+window.ebrc_page_name = 'risk_checker';
+    </script>
+    <link rel="stylesheet" href="./css/main.css">
+  </head>
+  <body>
+    <div class="hide"><a href="#content">Skip to content</a></div>
+    <div class="wrapper">
+      <header role="banner">
+        <div class="separator wide-show"></div>
+        <div class="header">
+          <div class="frame">
+            <div class="risk-checker">
+              <a href="./"><img src="./img/my_risk_checker.png" alt="My RiskChecker"/></a>
+            </div>
+          </div><!-- .frame -->
+        </div><!-- .header -->
+      </header>
+      <div class="separator wide-hide"></div>
+      <section role="main">
+        <div id="content">
+<div class="frame">
+	<div class="js-enabled">
+		<div id="risk_checker">
+			<div class="post-splash">
+				<div class="introduction" id="introduction">
+					<h1 class="c4 highlight">Welcome to My RiskChecker</h1>
+					<p class="large-text">Answer a few quick questions and you'll get a personalised STI Risk Report.
+						You'll also get clear information about the Sexually Transmitted Infections you're at risk of
+						catching, how to avoid them and what to do if you've already got one.</p>
+					<p class="large-text">For each question, select the answer that is most applicable to you.</p>
+					<ul class="buttons">
+						<li>
+							<button class="btn start">
+								<span class="medium-text">Start RiskChecker</span><br />
+								<span class="small-text">And Accept Terms &amp; Conditions</span>
+							</button>
+						</li>
+					</ul>
+					<ul class="buttons">
+						<li>
+							<a class="btn btn-nav btn-secondary" href="./resources.html">
+								<span class="medium-text">More Resources</span><br />
+								<span class="small-text">Ask a sex question, find a clinic, learn more about STIs</span>
+							</a>
+						</li>
+						 <li><a class="btn btn-nav btn-tertiary" href="./questions.html">Ask a Sexual Health Question</a></li>
+					</ul>
+					<p><a class="terms" href="./terms-and-conditions.html" rel="modal">Terms and conditions</a></p>
+					<div class="disclaimer">
+						<h2>Disclaimer:</h2>
+						<p>The information provided within the My RiskChecker web application (the "Website"), including
+							videos, photographs and any NHS Choices medical information, is for informational or
+							educational purposes only and is not a substitute for professional medical care by a
+							qualified doctor or other qualified healthcare professional. While we aim to ensure that
+							information is accurate, we do not warrant that any information included within this Website
+							is correct or will meet your health or medical requirements. This Website does not provide
+							any medical or diagnostic services so you should always check with a health professional if
+							you have any concerns about your health.</p>
+						<p>The risk level you receive at the end of the My RiskChecker application is only an indication
+							based on your answers. If you have any concerns, you should always visit your GP or GUM
+							clinic.</p>
+					</div>
+				</div><!-- .introduction -->
+			</div>
+			<div class="splash-screen">
+				Loading...
+			</div><!-- .splash-screen -->
+		</div><!-- #risk-checker -->
+	</div><!-- .js-enabled -->
+	<div class="js-disabled">
+		<p>In order to use My RiskChecker you will need to enable JavaScript.</p>
+		<p>Instructions on how to do this in a number of browsers can be found at <a
+				href="http://www.enable-javascript.com/" rel="external">www.enable-javascript.com</a>.</p>
+		<p>You can still access our resources to learn more about STIs.</p>
+		<ul class="buttons">
+			<li><a href="./resources.html" class="btn btn-nav">Resources</a></li>
+		</ul>
+	</div><!-- .js-disabled -->
+	<p class="low-js-show">Your browser has limited JavaScript support and you may encounter problems running the
+		questionnaire.</p>
+</div><!-- .frame -->
+          <div class="footer"></div>
+        </div><!-- #content -->
+      </section>
+    </div><!-- .wrapper -->
+    <div class="footer"></div>
+    <script>
+    (function () {
+      var s, s0, main_js = './js/main.js?_=' + window.ebrc_build_number;
+      s = document.createElement('script');
+      s.type = 'text/javascript';
+      s.async = true;
+      s.src = main_js;
+      s0 = document.getElementsByTagName('script')[0];
+      s0.parentNode.insertBefore(s, s0);
+    }());
+    </script>
+  </body>
+</html>

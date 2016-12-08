@@ -1,0 +1,57 @@
+<div id="c4nav" class="c4navSmall  c4navSmallExternal ">
+
+	<div id="c4navMain">
+	    <ul class="c4navChannels cf" title="TV Channels">
+	        <li class="c4navFirst"><a title="CHANNEL 4" target="_top" href="http://www.channel4.com">CHANNEL 4</a></li>
+
+
+	        <li><a title="4SEVEN" target="_top" href="http://www.channel4.com/4seven">4SEVEN</a></li>
+	        <li><a title="FILM4" target="_top" href="http://www.film4.com">FILM4</a></li>
+	        <li><a title="MORE4" target="_top" href="http://www.more4.com">MORE4</a></li>
+	        <li><a title="E4" target="_top" href="http://www.e4.com">E4</a></li>
+	        <li><a title="4MUSIC" target="_top" href="http://www.4music.com">4MUSIC</a></li>
+	        <li class="c4navLast"><a title="4oD" target="_top" href="http://www.channel4.com/programmes/4od">4oD</a></li>
+	    </ul>
+	</div>
+	
+	<div id="c4navSecondary" >
+ 
+		<form action="http://www.channel4.com/search/" method="get" name="c4navSearch">
+			<label for="c4navSearchTxt">Search</label>
+			<input type="text" value="Search" name="q" size="37" id="c4navSearchTxt" />
+			<input type="submit" class="go" id="c4navSearchBtn" alt="Search" value=" " />
+		</form>
+
+		<ul class="c4navAccess" id="C4IdManagementNav">
+		    <li id="C4LoginLink"><a href="https://www.channel4.com/4me/account">Sign in</a></li>
+		    <li id="C4RegistrationLink"><a href="https://www.channel4.com/4me/registration">Register</a></li>
+		    <li id="C4WhyRegisterLink"><a href="https://www.channel4.com/4me/http/why-register">Why Register?</a></li>
+		    <li id="C4CookiesLink" class="c4navLast"><a href="http://www.channel4.com/4viewers/cookies">Cookies</a></li>
+		</ul>
+	</div>
+	
+	<a name="c4navSkip" class="c4navClear"></a>
+ <div id="c4acResultsSmall"></div>
+</div>
+
+<script type="text/javascript">
+	// <![CDATA[
+	if(C4searchAutocomplete && typeof(C4searchAutocomplete.init) == "function") {
+		C4searchAutocomplete.init('#c4navSearchTxt', 'c4acResultsSmall', false, {});
+	}
+	// ]]>
+</script>
+<script type="text/javascript">
+	// <![CDATA[
+	
+		if(window.C4){
+			if(C4.Identity && C4.Identity.Controller){ C4.Identity.Controller.init();}
+		}	
+	// ]]>
+</script>
+
+
+<!-- NavTracer -->
+<script type="text/javascript">
+    if (window.C4) { C4.NavTracer && C4.NavTracer.add('header', '/external/header/small'); }
+</script>

@@ -1,0 +1,19 @@
+<?php include(dirname(__FILE__).'/head-main.html') ?>
+      <section role="main">
+        <nav>
+          <div class="menu">
+            <div class="menu-bar frame">
+              <span class="back-target"><?php if (@$back_page) :?><a class="menu-back sprite" href="/<?php echo $back_page ?>.html"><span class="menu-back-text">Back</span></a><?php endif ?></span>
+              <span class="menu-title">Ask a question</span>
+            </div>
+            <div class="expandable">
+              <ul class="">
+                <?php /* Sorry about this - I'm not really a PHP programmer and I'm in a rush. */ ?>
+                <?php if (@$res_clinc) : ?><?php else: ?><li class="js-enabled"><a href="/clinic-finder.html">Find your nearest NHS GUM clinic</a></li><?php endif ?>
+                <?php if (@$res_sti) : ?><?php else: ?><li><a href="/common-sti.html">Info on most common STIs</a></li><?php endif ?>
+                <?php if (@$res_videos) : ?><?php else: ?><li class="js-enabled"><a href="/videos.html">Videos</a></li><?php endif ?>
+              </ul>
+            </div>
+          </div><!-- .menu -->
+        </nav>
+        <div id="content">

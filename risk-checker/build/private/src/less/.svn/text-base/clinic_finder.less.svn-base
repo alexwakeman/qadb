@@ -1,0 +1,121 @@
+// Define elements of the NHS clinic finder application.
+
+#osmap {
+    height: 200px;
+    width: 100%;
+    margin-bottom: 1em;
+}
+
+.clinic-finder {
+
+  .error-message {
+    color: @highlight;
+    margin-top: 0.25em;
+    margin-bottom: 0.5em;
+  }
+
+  .map {
+    margin-bottom: 1em;
+  }
+
+  .address {
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
+  }
+
+  .input {
+    font-size: 1em;
+    margin-bottom: 1em;
+    padding: 0.5em 0.25em;
+    width: 100%;
+    border: 1px solid @lightest-accessible;
+    #border .radius(0.25em);
+  }
+  .invalid {
+    border-color: @highlight;
+    background-color: @highlight-hover-bg;
+    margin-bottom: 0;
+  }
+
+  .clear-location {
+    border: 1px solid @highlight;
+    color: @highlight;
+    background: @highlight-hover-bg;
+    display: block;
+    margin: 1em auto 0;
+    padding: 0.5em;
+    #border .radius(0.25em);
+  }
+
+
+  .results {
+    list-style-type: none;
+    padding: 0;
+    li {
+      padding: 0.5em 0 1em 0;
+      border-top: 1px solid @ui-frame;
+    }
+    .result-distance {
+      display: block;
+    }
+  }
+
+  dl {
+    margin: 0;
+    padding: 0;
+    clear: both;
+    dt {
+      padding: 0;
+      margin: 0;
+      font-weight: bold;
+    }
+    dd {
+      padding: 0;
+      margin: 0 0 1em;
+    }
+  }
+
+  .loading {
+    display: none;
+    text-align: center;
+    height: 10em;
+    padding-top: 3em;
+    position: absolute;
+    width: 100%;
+    max-width: 722px;
+    background-color: white;
+    background-color:rgba(255,255,255,0.75);
+  }
+
+  .search-results {
+    display: inline-block;
+    margin: auto;
+    text-align: left;
+  }
+
+  .non-england {
+    text-align: center;
+    dl {
+      display: inline-block;
+    }
+  }
+
+  .thinking {
+    width: 1.5em;
+    display: inline-block;
+    text-align: left;
+  }
+
+  .information {
+    overflow: hidden;
+  }
+}
+
+.centre .clinic-finder {
+  text-align: center;
+}
+
+.js .clinic-finder .loading {
+  display: block;
+}

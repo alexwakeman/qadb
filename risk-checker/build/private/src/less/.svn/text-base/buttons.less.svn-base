@@ -1,0 +1,75 @@
+.btn {
+  #border .radius(2.25em); // (1em(text) + 2*1.25em(padding) + 2*0.5(border))/2
+  #em .padding(20, 16);
+  #gradient .linear(@button-background, @button-top, @button-bottom);
+  #percentage .font-size(16, 16);
+  border: 0.5em solid @button-outline; //13px border, 18px font
+  color: @button-text;
+  display: inline-block;
+  line-height: 1em;
+  text-decoration: none;
+  font-weight: normal;
+  text-transform: uppercase;
+  &:hover {
+    #gradient .solid(@button-hover-bg);
+    color: @button-text;
+  }
+  &:active {
+    #gradient .solid(@button-hover-bg);
+  }
+  img {
+    vertical-align: middle;
+    margin-left: 1em;
+  }
+  &.disabled {
+    cursor: not-allowed;
+    #gradient .solid(@lightest-accessible);
+    &:hover, &:active {
+      #gradient .solid(@lightest-accessible);
+    }
+  }
+}
+
+.btn-arrow {
+  #em .padding-vertical(6, 16); // Normal is 2*20px padding + 16px text. Image is 44px so 2*6px vertical padding.
+}
+
+.btn-nav {
+  #gradient .linear(@button-nav-background, @button-nav-top, @button-nav-bottom);
+  color: @button-text;
+  &:hover {
+    #gradient .solid(@button-nav-bg);
+    color: @button-text;
+  }
+  &:active {
+    #gradient .solid(@button-nav-bg);
+  }
+}
+.blue-btn,
+.btn-tertiary {
+	background:@blue-button;
+	&:hover,
+	&:active {
+	background:lighten(@blue-button, 10%);
+	}
+}
+
+// Lists of buttons.
+.buttons {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  li {
+    margin-bottom: 1em;
+    .btn {
+      text-align: center;
+      min-width: 75%; // Safe default for all browsers.
+      &.btn-tertiary,
+	  &.btn-secondary {
+        min-width: 0;
+      }
+    }
+  }
+}
+

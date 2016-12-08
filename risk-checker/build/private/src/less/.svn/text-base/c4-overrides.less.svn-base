@@ -1,0 +1,53 @@
+// Defines overrides for the C4 header and footer to make them work with small screens.
+
+#cookieNotification {
+  .cookie-policy-alert {
+    height: auto;
+    max-width: 960px;
+    overflow: hidden;
+    width: auto;
+  }
+  .explanation {
+    display: inline-block;
+    max-width: 645px;
+    width: auto;
+    margin: 0.5em 5%;
+  }
+  button.hide-alert, .manage-cookie {
+    position: static;
+  }
+  .manage-cookie {
+    display: block;
+    margin: 1em auto;
+  }
+  button.hide-alert {
+    margin: 1em auto;
+  }
+  .acceptance-area {
+    float: none;
+    width: auto;
+    text-align: center;
+  }
+}
+
+#c4footer {
+  width: auto;
+  min-width: 0;
+  padding-left: 5%;
+  padding-right: 5%;
+  .c4footerLinks {
+    display: none;
+  }
+  .c4footerLinks, p {
+    width: auto;
+    margin: 1em auto;
+  }
+  .c4footerImages {
+    margin: auto;
+    float: none;
+  }
+}
+
+#c4nav.c4navSmall {
+  min-width: 0;
+}
